@@ -14,11 +14,11 @@ __PACKAGE__->add_columns(
 		is_auto_increment => 1,
 	},
 	ip => {
-		data_type => 'text',
+		data_type => 'inet',
 		size => 15,
 	},
 	hostname => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 255,
 		is_nullable => 1,
 	},

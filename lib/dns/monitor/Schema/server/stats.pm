@@ -10,11 +10,11 @@ __PACKAGE__->table( 'server_stats' );
 __PACKAGE__->add_columns(
 	server_id => {
 		data_type => 'integer',
-		size => 16,
+		size => 32,
 	},
 	day => {
-		data_type => 'text',
-		size => 20,
+		data_type => 'character varying',
+		size => 15,
 		inflate_datetime => 1,
 	},
 	first_ts => {
@@ -31,12 +31,12 @@ __PACKAGE__->add_columns(
 	},
 	questions => {
 		data_type => 'integer',
-		size => 16,
+		size => 32,
 		default_value => 0,
 	},
 	answers => {
 		data_type => 'integer',
-		size => 16,
+		size => 32,
 		default_value => 0,
 	},
 );
