@@ -1,0 +1,67 @@
+<html>
+ <head>
+	<title>dns::monitor . <& SELF:title &></title>
+
+	<!-- JavaScript Libraries -->
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/functions.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/input.js') %>"></script>
+
+	<!-- Stylesheets -->
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/main.css') %>"/>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/blueprint/screen.css') %>"/>
+
+	<!-- jQuery UI -->
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/ui/css/smoothness/ui.css') %>"/>
+	<script type="text/javascript" src="<% $c->uri_for('/static/ui/jquery.ui.js') %>"></script>
+
+	<!-- jQuery Plugins -->
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.bgiframe.min.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.ajaxQueue.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.autocomplete.js') %>"></script>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/jquery.autocomplete.css') %>"/>
+
+ </head>
+<body>
+
+<div class="container">
+
+<div id="header" class="span-24 last">
+	<h1>dns::monitor .  <& SELF:title &></h1>
+</div>
+
+<div id="nav" class="span-24 last">
+</div>
+
+<hr class="space"/>
+
+<div id="content" class="span-17 left">
+% 	$m->call_next;
+</div>
+
+<div id="sidebar" class="span-6 prepend-1 last">
+</div>
+
+<div id="footer" class="span-24 last">
+</div>
+
+</div><!-- End of Body Container -->
+
+</body>
+
+</html>
+<%method title>overview</%method>
+<%shared>
+sub pass_args {
+	my @keys = @_;
+
+	my %_args = $m->request_args();
+	my %pass = ();
+	foreach my $k (@keys) {
+		$pass{$k} = $_args{$k};
+	}
+
+	return %pass;
+}
+</%shared>
+

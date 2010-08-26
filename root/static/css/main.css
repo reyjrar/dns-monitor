@@ -1,0 +1,130 @@
+/* floats */
+.float-left {
+	float: left;
+}
+.right {
+	text-align: right;
+}
+/* Element Formatting */
+table {
+	border: 1px solid #aeaeae;
+	border-collapse: collapse;
+	empty-cells: show;
+	clear: both;
+	margin: 0.2em;
+}
+thead tr th {
+	background-color: #303030;
+	color: #e0e0e0;
+	font-weight: normal;
+	margin: 10px;
+}
+tbody tr td,tbody tr.even td {
+	white-space: nowrap;
+	padding: 0.2em;
+	color: #303030;	
+}
+tbody tr.odd td {
+	background-color: #e5ddc4;
+	color: #000;
+}
+tbody tr.even:hover td, tbody tr.odd:hover td {
+	background-color: #DDAD90;
+}
+
+fieldset {
+	margin: 5px 0 0 0;
+	padding-top: 0.5em;
+	float: left;
+	clear: both;
+}
+fieldset * {
+	font-size: 14pt;
+}
+fieldset legend {
+	font-weight: bold;
+	font-size: 16pt;
+}
+div.dynamic label, div label {
+	display: block;
+	float: left;
+	padding: 3px 5px;
+	margin-top: 10px;
+	text-align: right;
+	vertical-align: top;
+}
+
+ul li {
+	margin: 1px;
+	padding: 2px;
+}
+
+ul.condensed li {
+	float: left;
+	list-style-image: none;
+	list-style-position: outside;
+	list-style-type: none;
+	margin: 2px;
+	padding: 2px;
+	position: relative;
+}
+/**************************************************************************/
+/* Color Rules */
+tr.green td {
+	background-color: #9f9;
+}
+tr.red td {
+	background-color: #fcc;
+}
+tr.blue td {
+	background-color: #9cf;
+}
+tr.orange td {
+	background-color: #ffAf7f;
+}
+tr.yellow td {
+	background-color: #fc9;
+}
+tr.gray td {
+	background-color: #ddd;
+}
+/**************************************************************************/
+/* Utility Rules */
+.eris-button-green {
+	background-color: #afa;
+	border: 1px solid #090;
+	color: #090;
+	padding-left: 3px;
+	padding-right: 3px;
+}
+.eris-button-gray-strike {
+	background-color: #e0e0e0;
+	border: 1px solid #ccc;
+	color: #666;
+	padding-left: 3px;
+	padding-right: 3px;
+	text-decoration: line-through;
+}
+
+.happy {
+	background-color: #afa;
+	border: 1px solid #090;
+	color: #090;
+	padding-left: 3px;
+	padding-right: 3px;
+}
+.sys {
+	font-family: fixed;
+	font-size: 8pt;
+	color: #333;
+}
+.debug {
+	float: left;
+	clear: both;
+	border: dashed 1px #600;
+	color: #600;
+	padding: 2px;
+	margin-top: 3px;
+	margin-bottom: 3px;
+}
+/**************************************************************************/

@@ -1,0 +1,31 @@
+ABOUT
+
+	dns-monitor is a project aimed at providing statistics on dns usage
+
+AUTHOR
+	Brad Lhotsky <brad.lhotsky@gmail.com>
+	http://twitter.com/reyjrar
+	http://divisionbyzero.net/blog
+
+INSTALL
+
+	# Configure the Perl Environment
+	perl Makefile.PL
+	# Configure the Application
+	edit dns_monitor.yml
+	# Deploy the Database
+	./devel/deploy_database_schema.pl
+	# Run the Sniffer
+	./scripts/sniffer.pl
+	# Run the application
+	./scripts/dns_monitor.pl -p 3000
+
+	http://localhost:3000/   # See Stuff
+
+CONFIGURATION
+
+	dns_monitor.yml is YAML, no, it's not JSON.
+
+PROBLEMS
+
+	May cause internal bleeding.
