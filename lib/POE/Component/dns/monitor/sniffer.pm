@@ -133,7 +133,6 @@ sub spawn {
 			# Actually handle the packet
 			handle_packet			=> \&sniffer_handle_packet,
 		},
-		options => { trace => 1, debug => 1 },
 	);
 
 	return $session_id;
@@ -148,8 +147,6 @@ sub sniffer_start {
 	$heap->{log} = $args->{LogSID};
 	$heap->{_plugins} = $args->{Plugins};
 	$heap->{_pcap} = $args->{PcapOpts};
-
-	print Dump $args->{PcapOpts};
 
 	# Set the Alias
 	$kernel->alias_set( 'sniffer' );

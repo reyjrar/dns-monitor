@@ -21,15 +21,15 @@ __PACKAGE__->add_columns(
 		size => 32,
 	},
 	name => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 255,
 	},
 	type => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 20,
 	},
 	class => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 10,
 	}
 );

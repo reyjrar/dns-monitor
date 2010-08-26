@@ -20,7 +20,7 @@ use File::Basename;
 use YAML::Syck;
 $YAML::Syck::ImplicitTyping = 1;
 # POE Environment
-sub POE::Kernel::ASSERT_DEFAULT () { 1 }
+sub POE::Kernel::ASSERT_DEFAULT () { 1 } 
 use EV;
 use POE qw(
 	Loop::EV

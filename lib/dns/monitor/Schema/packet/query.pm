@@ -30,7 +30,7 @@ __PACKAGE__->add_columns(
 		data_type => 'integer',
 		size => 32,
 	},
-	opcode => { data_type => 'text', size => 12, },
+	opcode => { data_type => 'character varying', size => 12, },
 	count_questions => { data_type => 'integer', size => 32, },
 	flag_recursive				=> { data_type => 'bool', default_value => 'false', },
 	flag_truncated				=> { data_type => 'bool', default_value => 'false', },

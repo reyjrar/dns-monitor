@@ -10,10 +10,10 @@ __PACKAGE__->table( 'client_stats' );
 __PACKAGE__->add_columns(
 	client_id => {
 		data_type => 'integer',
-		size => 16,
+		size => 32,
 	},
 	day => {
-		data_type => 'text',
+		data_type => 'date',
 		size => 15,
 		inflate_datetime => 1,
 	},

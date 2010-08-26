@@ -9,7 +9,7 @@ __PACKAGE__->table( 'packet_data_answer' );
 __PACKAGE__->add_columns(
 	id => {
 		data_type => 'integer',
-		size => 16,
+		size => 32,
 		is_auto_increment => 1,
 	},
 	response_id => {
@@ -17,20 +17,20 @@ __PACKAGE__->add_columns(
 		size => 16,
 	},
 	name => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 255,
 	},
 	type => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 20,
 	},
 	class => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 10,
 		default_value => 'IN',
 	},
 	opts => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 255,
 	},
 	ttl => {
@@ -38,7 +38,7 @@ __PACKAGE__->add_columns(
 		size => 32,
 	},
 	section => {
-		data_type => 'text',
+		data_type => 'character varying',
 		size => 10,
 		default_value => 'answer',
 	},
