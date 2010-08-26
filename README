@@ -11,15 +11,20 @@ INSTALL
 
 	# Configure the Perl Environment
 	perl Makefile.PL
+
 	# Configure the Application
-	edit dns_monitor.yml
+	cp dns_monitor.yml.default dns_monitor.yml
+
 	# Deploy the Database
 	./devel/deploy_database_schema.pl
+
 	# Run the Sniffer
 	./scripts/sniffer.pl
+
 	# Run the application
 	./scripts/dns_monitor.pl -p 3000
 
+	# Point your web browser to
 	http://localhost:3000/   # See Stuff
 
 CONFIGURATION
