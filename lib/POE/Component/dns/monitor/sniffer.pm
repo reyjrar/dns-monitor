@@ -15,7 +15,6 @@ use NetPacket::UDP;
 use Net::DNS::Packet;
 # Handle Loading Plugins
 use Module::Pluggable require => 1, search_path => [ 'POE::Component::dns::monitor::sniffer::plugin' ];
-use YAML;
 use Try::Tiny;
 
 # POE
@@ -148,8 +147,6 @@ sub sniffer_start {
 	$heap->{log} = $args->{LogSID};
 	$heap->{_plugins} = $args->{Plugins};
 	$heap->{_pcap} = $args->{PcapOpts};
-
-	print Dump $args->{PcapOpts};
 
 	# Set the Alias
 	$kernel->alias_set( 'sniffer' );
