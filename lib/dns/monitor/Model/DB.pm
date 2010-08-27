@@ -4,7 +4,7 @@ use strict;
 use base 'Catalyst::Model::DBIC::Schema';
 use dns::monitor;
 
-my $DB = eris->config('db');
+my $DB = dns::monitor->config->{db};
 
 __PACKAGE__->config(
     schema_class => 'dns::monitor::Schema',
