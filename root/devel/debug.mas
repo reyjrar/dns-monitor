@@ -1,0 +1,79 @@
+
+<!-- Menu -->
+<hr class="space"/>
+<div id="develDebug" class="ui-helper-reset ui-widget ui-state-error">
+  <div class="ui-tabs ui-widget-header ui-state-error">Developer Tools</div>
+  <div class="ui-tabs ui-widget-content">
+
+  <div class="ui-state-default">
+	<a id="button_devel_parameters" class="ui-helper-reset" href="#">
+		<span class="ui-helper-reset float-left ui-icon ui-icon-newwin"></span>
+		Parameters
+	</a>
+  </div>
+  <div class="ui-state-default">
+	<a id="button_devel_stash" class="ui-helper-reset" href="#">
+		<span class="ui-helper-reset float-left ui-icon ui-icon-newwin"></span>
+		Stash
+	</a>
+  </div> 
+  <div class="ui-state-default">
+	<a id="button_devel_session" class="ui-helper-reset" href="#">
+		<span class="ui-helper-reset float-left ui-icon ui-icon-newwin"></span>
+		Session
+	</a>
+  </div>	
+  <div class="ui-state-default">
+	<a id="button_devel_flash" class="ui-helper-reset" href="#">
+		<span class="ui-helper-reset float-left ui-icon ui-icon-newwin"></span>
+		Flash
+	</a>
+  </div>	
+
+  </div><!-- end contet -->
+</div>
+
+<script type="text/javascript">
+$('#button_devel_parameters').bind('click', function(e) {
+	$('#develParameters').dialog({ width: 600, autoOpen: true });
+});
+$('#button_devel_stash').bind('click', function(e) {
+	$('#develStash').dialog({ width: 600, autoOpen: true });
+});
+$('#button_devel_session').bind('click', function(e) {
+	$('#develSession').dialog({ width: 600, autoOpen: true });
+});
+$('#button_devel_flash').bind('click', function(e) {
+	$('#develFlash').dialog({ width: 600, autoOpen: true });
+});
+</script>
+
+<div id="develParameters" title="Devel :: Parameters" class="ui-helper-reset ui-state-default ui-helper-hidden">
+<xmp>
+% print Dumper ($c->req->params);
+</xmp>
+</div>
+
+<div id="develStash" title="Devel :: Stash" class="ui-helper-reset ui-state-default ui-helper-hidden">
+<xmp>
+% print Dumper ($c->stash);
+</xmp>
+</div>
+
+<div id="develSession" title="Devel :: Session" class="ui-helper-reset ui-state-default ui-helper-hidden">
+<xmp>
+% print Dumper ($c->session);
+</xmp>
+</div>
+
+<div id="develFlash" title="Devel :: Flash" class="ui-helper-reset ui-state-default ui-helper-hidden">
+<xmp>
+% print Dumper ($c->flash);
+</xmp>
+</div>
+
+<%init>
+use Data::Dumper;
+
+$Data::Dumper::Maxdepth = 3;
+</%init>

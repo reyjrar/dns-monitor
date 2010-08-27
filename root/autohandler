@@ -5,21 +5,22 @@
 	<!-- JavaScript Libraries -->
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.js') %>"></script>
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/functions.js') %>"></script>
-	<script type="text/javascript" src="<% $c->uri_for('/static/js/input.js') %>"></script>
 
 	<!-- Stylesheets -->
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/main.css') %>"/>
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/blueprint/screen.css') %>"/>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/blueprint/plugins/sprites/sprite.css') %>"/>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/superfish.css') %>"/>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/jquery.dataTables.css') %>"/>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/ui-themes/smoothness/jquery.ui.css') %>"/>
 
 	<!-- jQuery UI -->
-	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/ui/css/smoothness/ui.css') %>"/>
 	<script type="text/javascript" src="<% $c->uri_for('/static/ui/jquery.ui.js') %>"></script>
 
 	<!-- jQuery Plugins -->
-	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.bgiframe.min.js') %>"></script>
-	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.ajaxQueue.js') %>"></script>
-	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.autocomplete.js') %>"></script>
-	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/jquery.autocomplete.css') %>"/>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.hoverIntent.min.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.dataTables.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.superfish.js') %>"></script>
 
  </head>
 <body>
@@ -35,11 +36,36 @@
 
 <hr class="space"/>
 
+% if(  defined $c->flash->{errors} && ref $c->flash->{errors} eq 'ARRAY' ) {
+<div class="prepend-6 span-12 last ui-widget">
+	<div class="ui-state-error ui-corner-all boxed">
+% foreach my $error (@{ $c->flash->{errors} }) {
+	<div class="last">
+		<span class="ui-icon ui-icon-alert" style="float: left; margin-right: 0.3em;"></span>
+		<strong>Error:</strong> <% $error |h %>
+	</div>
+% }
+	</div>
+</div>
+% } # End if errors
+
+% if(  defined $c->flash->{notice} ) {
+<div class="prepend-6 span-12 last ui-widget">
+	<div class="ui-state-highlight ui-corner-all boxed">
+	<span class="ui-icon ui-icon-info" style="float: left; margin-right: 0.3em;"></span>
+	<strong>Notice:</strong> <% $c->flash->{notice} |h %>
+	</div>
+</div>
+% } # End if errors
+
 <div id="content" class="span-17 left">
 % 	$m->call_next;
 </div>
 
 <div id="sidebar" class="span-6 prepend-1 last">
+% if( exists $c->session->{debug} && $c->session->{debug} ) {
+<& /devel/debug.mas &>
+% }
 </div>
 
 <div id="footer" class="span-24 last">
@@ -64,4 +90,3 @@ sub pass_args {
 	return %pass;
 }
 </%shared>
-

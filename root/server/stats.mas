@@ -1,0 +1,34 @@
+<%args>
+	$server_stats_rs
+</%args>
+
+<table id="serverStats">
+<thead>
+  <tr>
+	<th></th>
+	<th>server</th>
+	<th>questions</th>
+	<th>answers</th>
+  </tr>
+</thead>
+<tbody>
+% while( my $ss = $server_stats_rs->next ) {
+  <tr>
+	<td><span class="ss_sprite <% $ss->server->is_authorized ? 'ss_tick' : 'ss_cross' %>">&nbsp;</span></td>
+	<td><% $ss->server->ip %></td>
+	<td><% $ss->questions %></td>
+	<td><% $ss->answers %></td>
+  </tr>
+% }
+</tbody>
+</table>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#serverStats').dataTable({
+			'bJQueryUI': true,
+			'iDisplayLength': 25,
+			'aaSorting': [ [ 3, 'desc' ] ]
+		});
+	});
+</script>
+<%method title>server statistics for <% $c->stash->{date} %></%method>
