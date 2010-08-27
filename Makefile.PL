@@ -15,7 +15,7 @@ requires 'Catalyst::Plugin::Static::Simple';
 requires 'Catalyst::Action::RenderView';
 requires 'Catalyst::View::Mason';
 requires 'Catalyst::View::RRDGraph';
-requires 'Catalyst::Model::DBIx::Class';
+requires 'Catalyst::Model::DBIC::Schema';
 requires 'DBIx::Class::TimeStamp';
 requires 'Moose';
 requires 'namespace::autoclean';

@@ -29,7 +29,7 @@ The root page (/)
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-    $c->stash->{template} = '/index.mas';
+	$c->forward( '/server/stats' );
 }
 
 =head2 default
@@ -40,8 +40,30 @@ Standard 404 error page
 
 sub default :Path {
     my ( $self, $c ) = @_;
-    $c->response->body( 'Page not found' );
+    $c->response->body( 'not yet implemented' );
     $c->response->status(404);
+}
+
+=head2 auto
+
+Root Auto global settings
+
+=cut
+
+sub auto :Private {
+	my ( $self, $c ) = @_;
+
+	my $args = $c->req->params;
+
+	if( exists $args->{debug} ) {
+		if ( $args->{debug} eq 'enable' ) {
+			$c->session->{debug} = 1;
+		}
+		else {
+			$c->session->{debug} = 0;
+		}
+	}
+	return 1;
 }
 
 =head2 end

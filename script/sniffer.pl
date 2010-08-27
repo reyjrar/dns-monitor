@@ -17,8 +17,7 @@ use lib "$FindBin::Bin/../lib";
 use File::Spec;
 use File::Basename;
 # Config Parsing
-use YAML::Syck;
-$YAML::Syck::ImplicitTyping = 1;
+use YAML;
 # POE Environment
 sub POE::Kernel::ASSERT_DEFAULT () { 1 } 
 use EV;
@@ -48,7 +47,7 @@ my %DIRS = (
 #------------------------------------------------------------------------#
 # Load Configuration
 my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
-my $CFG = LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
+my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
 
 # Connect to the Database:
 my $schema = dns::monitor::Schema->connect( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
