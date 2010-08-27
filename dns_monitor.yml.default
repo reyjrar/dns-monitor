@@ -1,6 +1,6 @@
 ---
 name: dns::monitor
-log_cfg: /etc/perl_logging.conf
+log_cfg: conf/logging.conf
 db:
   dsn: dbi:SQLite:./cache/db/dnsmonitor.db
   user:
