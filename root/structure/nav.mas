@@ -1,0 +1,40 @@
+<!-- Navigation -->
+<ul id="navigation" class="sf-menu">
+% foreach my $mi (@menuItems) {
+	<li><a href="<% $c->uri_for( $mi->{url} ) %>"><% $mi->{title} %></a>
+%	if( ref $mi->{items} eq 'ARRAY' ) {
+	  <ul>
+%	foreach my $si (@{ $mi->{items} }) {
+		<li><a href="<% $c->uri_for( $si->{url} ) %>"><% $si->{title} %></a></li>
+% 	} # End of sub items;
+	</ul>
+%	} # end if sub items
+
+% } # END Main loop
+</ul>
+<script type="text/javascript">
+ $('#navigation').superfish();
+</script>
+<%init>
+my @menuItems = (
+	{
+		title	=> 'main',
+		url		=> '/',
+		items 	=> undef,
+	},
+	{
+		title	=> 'stats',
+		url		=> '#',
+		items	=> [
+			{ title => 'server stats', url => '/server/stats' },
+			{ title => 'client stats', url => '/client/stats' },
+		],
+	},
+	{
+		title	=> 'logout',
+		url		=> '/logout',
+		items	=> undef,
+	},
+);
+</%init>
+

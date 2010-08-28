@@ -1,0 +1,36 @@
+<%args>
+	$client_stats_rs
+</%args>
+
+<table id="clientStats">
+<thead>
+  <tr>
+	<th>client</th>
+	<th>questions</th>
+	<th>answers</th>
+	<th>nx</th>
+	<th>errors</th>
+  </tr>
+</thead>
+<tbody>
+% while( my $cs = $client_stats_rs->next ) {
+  <tr>
+	<td><% $cs->client->ip %></td>
+	<td><% $cs->queries %></td>
+	<td><% $cs->answers %></td>
+	<td><% $cs->nx %></td>
+	<td><% $cs->errors %></td>
+  </tr>
+% }
+</tbody>
+</table>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#clientStats').dataTable({
+			'bJQueryUI': true,
+			'iDisplayLength': 25,
+			'aaSorting': [ [ 4, 'desc' ] ]
+		});
+	});
+</script>
+<%method title>client statistics for <% $c->stash->{date} %></%method>

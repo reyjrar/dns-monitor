@@ -29,6 +29,10 @@
 
 <div id="header" class="span-24 last">
 	<h1>dns::monitor .  <& SELF:title &></h1>
+	<div class="span-24 last nav">  
+		<& /structure/nav.mas &>
+	</div>
+
 </div>
 
 <div id="nav" class="span-24 last">
