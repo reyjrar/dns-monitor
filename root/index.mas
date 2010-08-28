@@ -1,3 +1,9 @@
-<h2>Non-Functional</h2>
+<h2>in process</h2>
 
-<p>The interface will be included in the next release.</p>
+<p>dns::monitor will be adding graphs, statistics, searches, and anomaly detection.</p>
+
+<h3>recently added features</h3>
+<ul>
+  <li>client::stats interface</li>
+  <li>server::stats interface</li>
+</ul>

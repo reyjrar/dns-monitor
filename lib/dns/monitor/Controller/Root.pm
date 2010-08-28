@@ -29,7 +29,7 @@ The root page (/)
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-	$c->forward( '/server/stats' );
+	$c->stash->{template} = '/index.mas';
 }
 
 =head2 default
