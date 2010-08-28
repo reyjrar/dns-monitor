@@ -184,7 +184,7 @@ sub sniffer_load_plugins {
 			next;
 		}
 
-		if( !$plugin->can('spawn') && !$plugin->can('process') ) {
+		if( !$plugin->can('spawn') || !$plugin->can('process') ) {
 			$kernel->post( $heap->{log} => notice => "plugin::$name : API Failure, skipping" );
 			next;
 		}
