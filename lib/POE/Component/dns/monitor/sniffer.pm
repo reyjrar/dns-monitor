@@ -130,6 +130,7 @@ sub spawn {
 			_stop	=> sub {} ,	
 			sniffer_start 			=> \&sniffer_start,
 			sniffer_load_plugins	=> \&sniffer_load_plugins,
+			sniffer_stats			=> \&sniffer_stats,
 			# Actually handle the packet
 			handle_packet			=> \&sniffer_handle_packet,
 		},
@@ -160,6 +161,9 @@ sub sniffer_start {
 	$kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
 		if exists $args->{PcapOpts}{filter} && length $args->{PcapOpts}{filter};
 	$kernel->post( pcap => 'run' );
+
+	# Initialize Statistics Engine
+	$kernel->delay_add( 'sniffer_stats', 60 );
 }
 
 sub sniffer_load_plugins {
@@ -214,6 +218,7 @@ sub sniffer_handle_packet {
 	foreach my $inst ( @{ $packets } )  {
 		my ($hdr, $pkt) = @{ $inst };
 		next unless defined $hdr;
+		increment_stat( $heap, 'packet' );
 	
 		#
 		# Begin Decoding
@@ -226,6 +231,9 @@ sub sniffer_handle_packet {
 		if( $ip_pkt->{proto} == IP_PROTO_UDP ) {
 			dns_parse( $pkt, $ip_pkt, $heap );
 		}
+		else {
+			increment_stat( $heap, 'invalid' );
+		}
 	}
 }
 
@@ -236,9 +244,7 @@ sub dns_parse {
 	#
 	# udp packet breakdown
 	my $udp = NetPacket::UDP->decode( ip_strip( eth_strip($orig) ) );
-	$poe_kernel->post( $heap->{log} => debug =>  "Packet $ip->{src_ip}:$udp->{src_port}" .
-			" to $ip->{dest_ip}:$udp->{dest_port}"
-	);
+	increment_stat( $heap, 'udp' );
 	#
 	# Server Accounting.
 	my %ip = ();
@@ -252,19 +258,60 @@ sub dns_parse {
 	}
 
 	return unless  $ip{client} and $ip{server};
-	$poe_kernel->post( $heap->{log} => debug => "Server: $ip{server}, Client => $ip{client}");
+	increment_stat( $heap, 'port53' );
 
 	# Net::DNS Packet
 	my $dnsp = Net::DNS::Packet->new( \$udp->{data} );
 	if( defined $dnsp ) {
+		# Stats
+		increment_stat( $heap, 'dns' );
+		my $qa = $dnsp->header->qr ? 'answer' : 'question';
+		increment_stat( $heap, $qa );
+
 		# Client and Server Objects
 		my $srv = $heap->{model}->resultset('server')->find_or_create( { ip => $ip{server} } );
 		my $cli = $heap->{model}->resultset('client')->find_or_create( { ip => $ip{client} } );
 
 		foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
 			$poe_kernel->post( $plugin_name => process => $dnsp, $srv, $cli );
+			increment_stat( $heap, "plugin::$plugin_name" );
 		}
 	}
+}
+
+sub sniffer_stats {
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+	# Delete the stats from the heap;
+	my $stats = delete $heap->{stats};
+
+	my @pairs = ();
+	foreach my $k (qw( packet invalid udp port53 dns question answer )) {
+		if( exists $stats->{$k} ) {
+			push @pairs, "$k=$stats->{$k}";
+		}	
+	}
+	foreach my $plugin ( sort grep /^plugin\:\:/, keys %{ $stats } ) {
+		push @pairs, "$plugin=$stats->{$plugin}";
+	}
+	$kernel->post( log => 'debug' => 'STATS: ' . join(', ', @pairs) );
+
+	# Redo Stats Event
+	$kernel->delay_add( 'sniffer_stats', 60 );
+}
+
+sub increment_stat {
+	my ($heap,$key) = @_;
+	
+	# make sure the stat exists
+	if( !exists $heap->{stats}  ) {
+		$heap->{stats} = {};
+	}
+	if( !exists $heap->{stats}{$key} ) {
+		$heap->{stats}{$key} = 0;
+	}
+	# increment stat
+	$heap->{stats}{$key}++;
 }
 
 # RETURN TRUE;
