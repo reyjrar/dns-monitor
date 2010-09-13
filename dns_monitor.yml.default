@@ -1,8 +1,21 @@
 ---
 name: dns::monitor
 log_cfg: ./conf/logging.conf
-rrd:
+rrd: &rrdglobal
   dir: ./cache/rrd
+  types:
+    A: 00B554
+    CNAME: 4797CA
+    MX: 749EB5
+    PTR: F29D00
+    TXT: 4f5444
+    SRV: F26300
+    default: C9424C 
+  rcodes:
+    NOERROR: 00B554
+    NXDOMAIN: C11700
+    default: C9424C
+
 
 db:
   dsn: dbi:SQLite:./cache/db/dnsmonitor.db
@@ -18,11 +31,17 @@ pcap:
 
 plugins:
   server::stats:
-    enabled: 1
-    rrd: 1
+    enable: 1
+
+  client::stats:
+    enable: 1
+
+  packet::rrd:
+    enable: 1
 
   server::authorized:
     enable: 1
     authorized:
       - 8.8.8.8
       - 8.8.4.4
+
