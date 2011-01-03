@@ -128,6 +128,7 @@ sub spawn {
 		inline_states => {
 			_start	=> sub { $poe_kernel->yield( 'sniffer_start' => \%args ) },
 			_stop	=> sub {} ,	
+			_child	=> \&sniffer_handle_sigchld,
 			sniffer_start 			=> \&sniffer_start,
 			sniffer_load_plugins	=> \&sniffer_load_plugins,
 			sniffer_stats			=> \&sniffer_stats,
@@ -237,6 +238,14 @@ sub sniffer_handle_packet {
 	}
 }
 
+#------------------------------------------------------------------------#
+sub sniffer_handle_sigchld {
+	my ($kernel,$heap,$child,$exit_code) = @_[KERNEL,HEAP,ARG1,ARG2];
+	my $child_pid = $child->ID;
+	my $exit_status = $exit_code >>8;
+	return unless $exit_code != 0;
+	$kernel->post( $heap->{log} => notice => "Received SIGCHLD from $child_pid ($exit_status)" );
+}
 #------------------------------------------------------------------------#
 sub dns_parse {
 	my ($orig, $ip, $heap) = @_;

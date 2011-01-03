@@ -24,7 +24,7 @@ sub spawn {
 	return $sess->ID;
 }
 
-sub server_stats_start {
+sub packet_logger_start {
 	my($kernel,$heap,$args) = @_[KERNEL,HEAP,ARG0];
 
 	$kernel->alias_set( $args->{Alias} );
@@ -37,15 +37,127 @@ sub server_stats_start {
 sub process {
 	my ( $kernel,$heap,$dnsp,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2];
 
-	#my $stats = $heap->{model}->resultset('server::stats')->find_or_create(
-	#	{
-	#		server_id	=> $srv->id,
-	#		day 		=> $dt->ymd,
-	#	}
-	#);	
-
 	# Check for query/response
-	if( $dnsp->header->qr ) { }
+	if( $dnsp->header->qr ) {
+		# Answer
+		my $resp = $heap->{model}->resultset('packet::response')->create({
+			client_id => $cli->id,
+			server_id => $srv->id,
+			query_serial => $dnsp->header->id,
+			opcode => $dnsp->header->opcode,
+			status => $dnsp->header->rcode,
+			size_answer => $dnsp->answersize,
+			count_answer => $dnsp->header->ancount,
+			count_additional => $dnsp->header->arcount,
+			count_authority => $dnsp->header->nscount,
+			count_question => $dnsp->header->qdcount,
+			flag_authoritative => $dnsp->header->aa,
+			flag_authenticated => $dnsp->header->ad,
+			flag_truncated => $dnsp->header->tc,
+			flag_checking_desired => $dnsp->header->cd,
+			flag_recursion_desired => $dnsp->header->rd,
+			flag_recursion_available => $dnsp->header->ra,
+		});
+		$resp->update;
+
+		my @sets = (
+			{ name => 'answer', rrs => [ $dnsp->answer ], },
+			{ name => 'additional', rrs => [ $dnsp->additional ], },
+			{ name => 'authority', rrs => [ $dnsp->authority ], },
+		);
+		foreach my $set ( @sets ) {
+			foreach my $pa ( @{ $set->{rr} } ) {
+				my %data = _get_rr_data( $pa );
+				
+				next unless defined $data{value} && length $data{value};
+				
+				my $aobj = $heap->{model}->resultset('packet::record::answer')->find_or_create({
+					name	=> $pa->name,
+					type	=> $pa->type,
+					class	=> $pa->class,
+					opts	=> $data{opts},
+					value	=> $data{value},
+				});
+	
+				$aobj->reference_count( $aobj->reference_count + 1 );
+				$aobj->update;
+	
+				my $meta = $heap->{model}->resultset('packet::meta::answer')->create({
+					ttl		=> $pa->ttl,
+					response_id => $resp->id,
+					answer_id	=> $aobj->id,
+					section => $set->{name},
+				});
+				$meta->update;
+			}
+		}
+	}
+	else {
+		# Query
+		my $query = $heap->{model}->resultset('packet::query')->create({
+			client_id => $cli->id,
+			server_id => $srv->id,
+			query_serial => $dnsp->header->id,
+			opcode => $dnsp->header->opcode,
+			count_questions => $dnsp->header->qdcount,
+			flag_recursive => $dnsp->header->rd,
+			flag_truncated => $dnsp->header->tc,
+			flag_checking => $dnsp->header->cd,
+				
+		});
+		$query->update;
+		foreach my $pq ( $dnsp->question ) {
+			my $qobj = $heap->{model}->resultset('packet::record::question')->find_or_create({
+				name => $pq->qname,
+				type => $pq->qtype,
+				class => $pq->qclass,
+			});
+			$qobj->reference_count( $qobj->reference_count + 1 );
+			$qobj->update;
+			my $record = $heap->{model}->resultset('packet::meta::question')->create({
+				query_id => $query->id,
+				question_id => $qobj->id,
+			});
+			$record->update;
+		}
+	}
+}
+
+sub _get_rr_data {
+	my ($pa) = shift;
+
+	my %data = ( value => undef, opts => undef );
+
+	if( $pa->type eq 'A' || $pa->type eq 'AAAA' ) {
+		$data{value} = $pa->address;
+	}
+	elsif( $pa->type eq 'CNAME' ) {
+		$data{value} = $pa->cname;
+	}
+	elsif( $pa->type eq 'DNAME' ) {
+		$data{value} = $pa->dname;
+	}
+	elsif( $pa->type eq 'MX' ) {
+		$data{value} = $pa->exchange;
+		$data{opts} = $pa->preference;
+	}
+	elsif( $pa->type eq 'NS' ) {
+		$data{value} = $pa->nsdname;
+	}
+	elsif( $pa->type eq 'PTR' ) {
+		$data{value} = $pa->ptrdname;
+	}
+	elsif( $pa->type eq 'SRV' ) {
+		$data{value} = $pa->target;
+		$data{value} .= ':' . $pa->port if $pa->port;
+		$data{opts} = $pa->priority;
+		$data{opts} .= ';' . $pa->priority if defined $pa->weight;
+	}
+	elsif( $pa->type eq 'SPF' || $pa->type eq 'TXT' ) {
+		$data{value} = $pa->txtdata;
+	}
+	
+	return %data;
 }
 
 1;

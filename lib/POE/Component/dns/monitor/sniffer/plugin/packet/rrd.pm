@@ -15,7 +15,7 @@ sub spawn {
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
-		_start	=> sub { $poe_kernel->yield( 'packet_logger_start', \%args ); },
+		_start	=> sub { $poe_kernel->yield( 'rrd_start', \%args ); },
 		_stop 	=> sub { },
 		packet_logger_start => \&packet_logger_start,
 		process => \&process,
@@ -24,7 +24,7 @@ sub spawn {
 	return $sess->ID;
 }
 
-sub server_stats_start {
+sub rrd_start {
 	my($kernel,$heap,$args) = @_[KERNEL,HEAP,ARG0];
 
 	$kernel->alias_set( $args->{Alias} );

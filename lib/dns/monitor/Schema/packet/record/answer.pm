@@ -4,13 +4,25 @@ use strict;
 use warnings;
 use base qw(DBIx::Class::Core);
 
-__PACKAGE__->load_components(qw(PK::Auto));
+__PACKAGE__->load_components(qw(PK::Auto TimeStamp InflateColumn::DateTime));
 __PACKAGE__->table( 'packet_record_answer' );
 __PACKAGE__->add_columns(
 	id => {
 		data_type => 'integer',
 		size => 32,
 		is_auto_increment => 1,
+	},
+	first_ts => {
+		data_type => 'datetime',
+		size => 20,
+		inflate_datetime => 1,
+		set_on_create => 1,
+	},
+	last_ts => {
+		data_type => 'datetime',
+		size => 20,
+		inflate_datetime => 1,
+		set_on_create => 1, set_on_update => 1,
 	},
 	name => {
 		data_type => 'character varying',
