@@ -57,8 +57,9 @@ __PACKAGE__->belongs_to( 'server', 'dns::monitor::Schema::server',
 	{ 'foreign.id' => 'self.server_id' }
 );
 
-__PACKAGE__->has_many('questions', 'dns::monitor::Schema::packet::data::question',
+__PACKAGE__->has_many('response_answers', 'dns::monitor::Schema::packet::meta::responses',
 	{ 'foreign.response_id' => 'self.id' }
 );
+__PACKAGE__->many_to_many( answers => 'response_answers', 'answer' );
 
 1;
