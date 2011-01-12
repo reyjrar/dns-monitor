@@ -20,6 +20,11 @@ __PACKAGE__->add_columns(
 		data_type => 'integer',
 		size => 32,
 	},
+	query_id => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
+	},
 	query_serial => {
 		data_type => 'integer',
 		size => 32
@@ -55,6 +60,9 @@ __PACKAGE__->belongs_to( 'client', 'dns::monitor::Schema::client',
 
 __PACKAGE__->belongs_to( 'server', 'dns::monitor::Schema::server',
 	{ 'foreign.id' => 'self.server_id' }
+);
+__PACKAGE__->belongs_to( 'query', 'dns::monitor::Schema::packet::query',
+	{ 'foreign.id' => 'self.query_id' },
 );
 
 __PACKAGE__->has_many('response_answers', 'dns::monitor::Schema::packet::meta::answer',

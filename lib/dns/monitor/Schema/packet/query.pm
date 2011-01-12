@@ -30,6 +30,11 @@ __PACKAGE__->add_columns(
 		data_type => 'integer',
 		size => 32,
 	},
+	response_id => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
+	},
 	opcode => { data_type => 'character varying', size => 12, },
 	count_questions => { data_type => 'integer', size => 32, },
 	flag_recursive				=> { data_type => 'bool', default_value => 'false', },
@@ -46,6 +51,10 @@ __PACKAGE__->belongs_to( 'client', 'dns::monitor::Schema::client',
 
 __PACKAGE__->belongs_to( 'server', 'dns::monitor::Schema::server',
 	{ 'foreign.id' => 'self.server_id' }
+);
+
+__PACKAGE__->belongs_to('response', 'dns::monitor::Schema::packet::response',
+	{ 'foreign.id' => 'self.response_id' },
 );
 
 __PACKAGE__->has_many( 'query_questions', 'dns::monitor::Schema::packet::meta::question',
