@@ -31,4 +31,4 @@ mkdir( $DIRS{db}, 0755 ) unless -d $DIRS{db};
 
 # Connect and Deploy, overwriting what's in the db now.
 my $schema = dns::monitor::Schema->connect($CFG->{db}{dsn},$CFG->{db}{user},$CFG->{db}{pass});
-$schema->deploy({ add_drop_table => 0 });
+$schema->deploy({ add_drop_table => 1 });

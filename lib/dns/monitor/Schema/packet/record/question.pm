@@ -1,26 +1,16 @@
-package dns::monitor::Schema::client;
+package dns::monitor::Schema::packet::record::question;
 
 use strict;
 use warnings;
-
 use base qw(DBIx::Class::Core);
 
 __PACKAGE__->load_components(qw(PK::Auto TimeStamp InflateColumn::DateTime));
-__PACKAGE__->table( 'client' );
+__PACKAGE__->table( 'packet_record_question' );
 __PACKAGE__->add_columns(
 	id => {
 		data_type => 'integer',
-		size => 16,
+		size => 32,
 		is_auto_increment => 1,
-	},
-	ip => {
-		data_type => 'inet',
-		size => 15,
-	},
-	hostname => {
-		data_type => 'character varying',
-		size => 255,
-		is_nullable => 1,
 	},
 	first_ts => {
 		data_type => 'datetime',
@@ -34,25 +24,31 @@ __PACKAGE__->add_columns(
 		inflate_datetime => 1,
 		set_on_create => 1, set_on_update => 1,
 	},
-	is_local => {
-		data_type => 'bool',
-		default_value => 'FALSE',
+	name => {
+		data_type => 'character varying',
+		size => 255,
 	},
-	role_server_id => {
+	type => {
+		data_type => 'character varying',
+		size => 20,
+	},
+	class => {
+		data_type => 'character varying',
+		size => 10,
+		default_value => 'IN',
+	},
+	reference_count => {
 		data_type => 'integer',
 		size => 32,
-		is_nullable => 1,
+		default_value => 0,
 	},
 );
 __PACKAGE__->set_primary_key( 'id' );
 
 # Relationships
-__PACKAGE__->belongs_to( 'as_server' => 'dns::monitor::Schema::server',
-	{ 'foreign.id' => 'self.role_server_id' }
+__PACKAGE__->has_many('meta', 'dns::monitor::Schema::packet::meta::question',
+	{ 'foreign.question_id' => 'self.id' }
 );
-
-__PACKAGE__->might_have( 'server_by_ip' => 'dns::monitor::Schema::server',
-	{ 'foreign.ip' => 'self.ip' }
-);
+__PACKAGE__->many_to_many('queries' => 'meta', 'query' );
 
 1;

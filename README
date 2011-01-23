@@ -21,6 +21,9 @@ INSTALL
 	# Run the Sniffer
 	./scripts/sniffer.pl
 
+	# Run the analyzer
+	./scripts/analyzer.pl
+
 	# Run the application
 	./scripts/dns_monitor.pl -p 3000
 

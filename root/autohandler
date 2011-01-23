@@ -21,6 +21,7 @@
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.hoverIntent.min.js') %>"></script>
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.dataTables.js') %>"></script>
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.superfish.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.sparkline.js') %>"></script>
 
  </head>
 <body>
@@ -82,6 +83,7 @@
 </html>
 <%method title>overview</%method>
 <%shared>
+use DateTime;
 sub pass_args {
 	my @keys = @_;
 

@@ -34,7 +34,7 @@ sub client_stats_start {
 }
 
 sub process {
-	my ( $kernel,$heap,$dnsp,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2];
+	my ( $kernel,$heap,$dnsp,$ip,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2,ARG3];
 
 	my $dt = DateTime->now();
 	my $stats = $heap->{model}->resultset('client::stats')->find_or_create(
@@ -46,17 +46,21 @@ sub process {
 	# Check for query/response
 	if( $dnsp->header->qr ) {
 		if ( $dnsp->header->rcode eq 'NOERROR' ) {
-			$stats->answers( $stats->answers + 1 );
+			my $answers = $stats->answers || 0;
+			$stats->answers( $answers + 1 );
 		}
 		elsif( $dnsp->header->rcode eq 'NXDOMAIN' ) {
-			$stats->nx( $stats->nx + 1 );
+			my $nx = $stats->nx || 0;
+			$stats->nx( $nx + 1 );
 		}
 		else {
-			$stats->errors( $stats->errors + 1 );
+			my $errors = $stats->errors || 0;
+			$stats->errors( $errors + 1 );
 		}
 	}
 	else {
-		$stats->queries( $stats->queries + 1 );
+		my $queries = $stats->queries || 0;
+		$stats->queries( $queries + 1 );
 	}
 	$stats->update;
 }
