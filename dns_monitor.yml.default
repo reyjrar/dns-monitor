@@ -1,8 +1,27 @@
 ---
 name: dns::monitor
 log_cfg: ./conf/logging.conf
-rrd:
+rrd: &GLOBALrrd
   dir: ./cache/rrd
+  types:
+    A: 00B554
+    CNAME: 4797CA
+    MX: 749EB5
+    PTR: F29D00
+    TXT: 4f5444
+    SRV: F26300
+    default: C9424C 
+  rcodes:
+    NOERROR: 00B554
+    NXDOMAIN: C11700
+    default: C9424C
+
+network:
+  nameservers: &GLOBALnameservers
+    - 8.8.8.8
+    - 8.8.4.4
+  clients: &GLOBALclients
+    - 192.168.1.0/24
 
 db:
   dsn: dbi:SQLite:./cache/db/dnsmonitor.db
@@ -13,16 +32,32 @@ pcap:
   dev: any
   snaplen: 1518
   timeout: 100
-  filter: udp and port 53
+  filter: (tcp or udp) and port 53
   promisc: 0
 
 plugins:
+  client::stats:
+    enable: 1
+
+  client::local:
+    enable: 1
+    clients: *GLOBALclients
+
+  client::as_server:
+    enable: 1
+
   server::stats:
-    enabled: 1
-    rrd: 1
+    enable: 1
 
   server::authorized:
     enable: 1
-    authorized:
-      - 8.8.8.8
-      - 8.8.4.4
+    interval: 3600
+    authorized: *GLOBALnameservers
+
+  packet::rrd:
+    enable: 0
+    <<: *GLOBALrrd
+
+  packet::logger:
+    enable: 1
+    keep_for: 30 days

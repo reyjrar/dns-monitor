@@ -41,4 +41,9 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key( 'id' );
 
+# Relationships
+__PACKAGE__->has_many('responses', 'dns::monitor::Schema::packate::response',
+	{ 'foreign.server_id' => 'self.id' }
+);
+
 1;

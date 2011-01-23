@@ -16,9 +16,24 @@ __PACKAGE__->add_columns(
 		data_type => 'integer',
 		size => 32,
 	},
+	client_port => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
+	},
 	server_id => {
 		data_type => 'integer',
 		size => 32,
+	},
+	server_port => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
+	},
+	query_id => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
 	},
 	query_serial => {
 		data_type => 'integer',
@@ -29,6 +44,10 @@ __PACKAGE__->add_columns(
 		size => 20,
 		inflate_datetime => 1,
 		set_on_create => 1,
+	},
+	conversation_id => {
+		data_type => 'integer',
+		size => 32,
 	},
 	opcode => { data_type => 'character varying', size => 10, },
 	status => { data_type => 'character varying', size => 10, },
@@ -52,13 +71,20 @@ __PACKAGE__->set_primary_key( 'id' );
 __PACKAGE__->belongs_to( 'client', 'dns::monitor::Schema::client',
 	{ 'foreign.id' => 'self.client_id' }
 );
-
 __PACKAGE__->belongs_to( 'server', 'dns::monitor::Schema::server',
 	{ 'foreign.id' => 'self.server_id' }
 );
+__PACKAGE__->has_one( 'conversation', 'dns::monitor::Schema::packet::meta::conversation',
+	{ 'foreign.id' => 'self.conversation_id' }
+);
 
-__PACKAGE__->has_many('questions', 'dns::monitor::Schema::packet::data::question',
+__PACKAGE__->belongs_to( 'query', 'dns::monitor::Schema::packet::query',
+	{ 'foreign.id' => 'self.query_id' },
+);
+
+__PACKAGE__->has_many('response_answers', 'dns::monitor::Schema::packet::meta::answer',
 	{ 'foreign.response_id' => 'self.id' }
 );
+__PACKAGE__->many_to_many( answers => 'response_answers', 'answer' );
 
 1;

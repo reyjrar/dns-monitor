@@ -12,6 +12,7 @@ use CHI;
 use NetPacket::Ethernet qw(:strip);
 use NetPacket::IP qw(:strip :protos);
 use NetPacket::UDP;
+use NetPacket::TCP;
 use Net::DNS::Packet;
 # Handle Loading Plugins
 use Module::Pluggable require => 1, search_path => [ 'POE::Component::dns::monitor::sniffer::plugin' ];
@@ -68,7 +69,7 @@ Parameters:
 
 	B<PcapOpts> is a hashref containing options to send to the Net::Pcap module
 		Defaults to:
-			{ dev => 'any', snaplen => 1518, filter => 'udp and port 53', promisc => 0 }
+			{ dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 }
 		You should really send something more interesting than that
 
 	B<Plugins> is a hash ref for plugin options
@@ -91,7 +92,7 @@ sub spawn {
 		@_
 	);
 	# Defaults
-	my %pcapOpts = ( dev => 'any', snaplen => 1518, filter => 'udp and port 53', promisc => 0 );
+	my %pcapOpts = ( dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 );
 	my %pluginConfig = (
 		'packet::logger'		=> { enable => 1, keep_for => '30 days' },
 		'server::authorized'	=> { enable => 1 },
@@ -128,8 +129,10 @@ sub spawn {
 		inline_states => {
 			_start	=> sub { $poe_kernel->yield( 'sniffer_start' => \%args ) },
 			_stop	=> sub {} ,	
+			_child	=> \&sniffer_handle_sigchld,
 			sniffer_start 			=> \&sniffer_start,
 			sniffer_load_plugins	=> \&sniffer_load_plugins,
+			sniffer_stats			=> \&sniffer_stats,
 			# Actually handle the packet
 			handle_packet			=> \&sniffer_handle_packet,
 		},
@@ -160,6 +163,9 @@ sub sniffer_start {
 	$kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
 		if exists $args->{PcapOpts}{filter} && length $args->{PcapOpts}{filter};
 	$kernel->post( pcap => 'run' );
+
+	# Initialize Statistics Engine
+	$kernel->delay_add( 'sniffer_stats', 60 );
 }
 
 sub sniffer_load_plugins {
@@ -214,6 +220,7 @@ sub sniffer_handle_packet {
 	foreach my $inst ( @{ $packets } )  {
 		my ($hdr, $pkt) = @{ $inst };
 		next unless defined $hdr;
+		increment_stat( $heap, 'packet' );
 	
 		#
 		# Begin Decoding
@@ -223,48 +230,116 @@ sub sniffer_handle_packet {
 		return unless defined $ip_pkt;
 		return unless $ip_pkt->{proto};
 
+		# Handle UDP Packets
 		if( $ip_pkt->{proto} == IP_PROTO_UDP ) {
-			dns_parse( $pkt, $ip_pkt, $heap );
+			my $udp = NetPacket::UDP->decode( ip_strip( eth_strip($pkt) ) );
+			my %ip = (
+				src_ip => $ip_pkt->{src_ip},
+				src_port => $udp->{src_port},
+				dest_ip => $ip_pkt->{dest_ip},
+				dest_port => $udp->{dest_port},
+			);
+			increment_stat( $heap, 'udp' );
+			dns_parse( $udp, \%ip, $heap );
+		}
+		# Handle TCP Packets
+		elsif ( $ip_pkt->{proto} == IP_PROTO_TCP ) {
+			my $tcp = NetPacket::TCP->decode( ip_strip( eth_strip($pkt) ) );
+			my %ip = (
+				src_ip => $ip_pkt->{src_ip},
+				src_port => $tcp->{src_port},
+				dest_ip => $ip_pkt->{dest_ip},
+				dest_port => $tcp->{dest_port},
+			);
+			increment_stat( $heap, 'tcp' );
+			dns_parse( $tcp, \%ip, $heap );
+		}
+		else {
+			increment_stat( $heap, 'invalid' );
 		}
 	}
 }
 
 #------------------------------------------------------------------------#
+sub sniffer_handle_sigchld {
+	my ($kernel,$heap,$child,$exit_code) = @_[KERNEL,HEAP,ARG1,ARG2];
+	my $child_pid = $child->ID;
+	$exit_code ||= 0;
+	my $exit_status = $exit_code >>8;
+	return unless $exit_code != 0;
+	$kernel->post( $heap->{log} => notice => "Received SIGCHLD from $child_pid ($exit_status)" );
+}
+#------------------------------------------------------------------------#
 sub dns_parse {
-	my ($orig, $ip, $heap) = @_;
+	my ($layer4, $ip, $heap) = @_;
 
-	#
-	# udp packet breakdown
-	my $udp = NetPacket::UDP->decode( ip_strip( eth_strip($orig) ) );
-	$poe_kernel->post( $heap->{log} => debug =>  "Packet $ip->{src_ip}:$udp->{src_port}" .
-			" to $ip->{dest_ip}:$udp->{dest_port}"
-	);
+	# Parse DNS Packet
+	my $dnsp = Net::DNS::Packet->new( \$layer4->{data} );
+	return unless defined $dnsp;
+	increment_stat( $heap, 'dns' );
+
 	#
 	# Server Accounting.
+	my $qa = $dnsp->header->qr ? 'answer' : 'question';
+	increment_stat( $heap, $qa );
+
 	my %ip = ();
-	if( $udp->{src_port} == 53 ) {
+	if( $qa eq 'answer' ) {
 		$ip{server} = $ip->{src_ip};
-		$ip{client} = $ip->{dest_ip};
+		$ip{server_port} = $ip->{src_port};
+		$ip{client} = $ip->{dest_ip}; 
+		$ip{client_port} = $ip->{dest_port};
 	}
-	elsif ( $udp->{dest_port} == 53 ) {
+	else {
 		$ip{server} = $ip->{dest_ip};
+		$ip{server_port} = $ip->{dest_port};
 		$ip{client} = $ip->{src_ip};
+		$ip{client_port} = $ip->{src_port};
 	}
 
-	return unless  $ip{client} and $ip{server};
-	$poe_kernel->post( $heap->{log} => debug => "Server: $ip{server}, Client => $ip{client}");
+	# Client and Server Objects
+	my $srv = $heap->{model}->resultset('server')->find_or_create( { ip => $ip{server} } );
+	my $cli = $heap->{model}->resultset('client')->find_or_create( { ip => $ip{client} } );
 
-	# Net::DNS Packet
-	my $dnsp = Net::DNS::Packet->new( \$udp->{data} );
-	if( defined $dnsp ) {
-		# Client and Server Objects
-		my $srv = $heap->{model}->resultset('server')->find_or_create( { ip => $ip{server} } );
-		my $cli = $heap->{model}->resultset('client')->find_or_create( { ip => $ip{client} } );
-
-		foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
-			$poe_kernel->post( $plugin_name => process => $dnsp, $srv, $cli );
-		}
+	foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
+		$poe_kernel->post( $plugin_name => process => $dnsp, \%ip, $srv, $cli );
+		increment_stat( $heap, "plugin::$plugin_name" );
 	}
+}
+
+sub sniffer_stats {
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+	# Delete the stats from the heap;
+	my $stats = delete $heap->{stats};
+
+	my @pairs = ();
+	foreach my $k (qw( packet invalid udp port53 dns question answer )) {
+		if( exists $stats->{$k} ) {
+			push @pairs, "$k=$stats->{$k}";
+		}	
+	}
+	foreach my $plugin ( sort grep /^plugin\:\:/, keys %{ $stats } ) {
+		push @pairs, "$plugin=$stats->{$plugin}";
+	}
+	$kernel->post( log => 'debug' => 'STATS: ' . join(', ', @pairs) );
+
+	# Redo Stats Event
+	$kernel->delay_add( 'sniffer_stats', 60 );
+}
+
+sub increment_stat {
+	my ($heap,$key) = @_;
+	
+	# make sure the stat exists
+	if( !exists $heap->{stats}  ) {
+		$heap->{stats} = {};
+	}
+	if( !exists $heap->{stats}{$key} ) {
+		$heap->{stats}{$key} = 0;
+	}
+	# increment stat
+	$heap->{stats}{$key}++;
 }
 
 # RETURN TRUE;
