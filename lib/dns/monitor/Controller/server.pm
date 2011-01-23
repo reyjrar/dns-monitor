@@ -25,6 +25,15 @@ Catalyst Controller.
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
+	my $dt = DateTime->now()->subtract( days => 7 );
+	my $recent_rs = $c->model('DB::server')->search(
+		{ first_ts => { '>', $dt->datetime } },
+		{ order_by => { -desc => 'first_ts' } },
+	);
+
+	$c->stash->{title} = "dns servers discovered in the last 7 days";
+	$c->stash->{rs} = $recent_rs;
+	$c->stash->{template} = "/server/list.mas";
 }
 
 =head2 stats

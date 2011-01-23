@@ -35,7 +35,7 @@ sub server_stats_start {
 }
 
 sub process {
-	my ( $kernel,$heap,$dnsp,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2];
+	my ( $kernel,$heap,$dnsp,$ip,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2,ARG3];
 
 	my $dt = DateTime->now();
 	my $stats = $heap->{model}->resultset('server::stats')->find_or_create(
@@ -46,10 +46,12 @@ sub process {
 	);	
 	# Check for query/response
 	if( $dnsp->header->qr ) {
-		$stats->answers( $stats->answers + 1 );
+		my $answers = $stats->answers || 0;
+		$stats->answers( $answers + 1 );
 	}
 	else {
-		$stats->questions( $stats->questions + 1 );
+		my $questions = $stats->questions || 0;
+		$stats->questions( $questions + 1 );
 	}
 	$stats->update;
 }

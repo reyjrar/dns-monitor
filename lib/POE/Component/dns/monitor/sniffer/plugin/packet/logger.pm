@@ -21,6 +21,8 @@ sub spawn {
 		packet_logger_start => \&packet_logger_start,
 		process => \&process,
 		maintenance => \&packet_logger_maintenance,
+		packet_logger_query_response => \&packet_logger_query_response,
+		packet_logger_client_is_server => \&packet_logger_client_is_server,
 	});
 
 	return $sess->ID;
@@ -41,23 +43,38 @@ sub packet_logger_start {
 	$heap->{__qcache} = \%_qcache;
 
 	# Trigger Maintenance
-	$kernel->delay_add( 'maintenance', 300 );
+	$kernel->delay_add( 'maintenance', 30 );
 }
 
 sub process {
-	my ( $kernel,$heap,$dnsp,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2];
+	my ( $kernel,$heap,$dnsp,$ip,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2,ARG3];
 
 	# Packet ID
 	my $packet_id = join(';', $srv->id, $cli->id, $dnsp->header->id );
 
+	# Handle Conversation
+	my $role_server_id = $cli->role_server_id || 0;
+	my $conversation = $heap->{model}->resultset('packet::meta::conversation')->find_or_create({
+		server_id => $srv->id,
+		client_id => $cli->id,
+	});
+	$conversation->client_is_server( defined $cli->role_server_id ? 1 : 0 );
+	$conversation->update;
+	my $answers = $conversation->answers || 0;
+	my $questions = $conversation->questions || 0;
+
 	# Check for query/response
 	if( $dnsp->header->qr ) {
+		$answers++;
 		# Grab Queriy id from cache:
 		my $query_id = $heap->{qcache}->get( $packet_id );
 		# Answer
 		my $resp = $heap->{model}->resultset('packet::response')->create({
 			client_id => $cli->id,
 			server_id => $srv->id,
+			conversation_id => $conversation->id,
+			client_port => $ip->{client_port},
+			server_port => $ip->{server_port},
 			query_serial => $dnsp->header->id,
 			opcode => $dnsp->header->opcode,
 			status => $dnsp->header->rcode,
@@ -124,9 +141,13 @@ sub process {
 	}
 	else {
 		# Query
+		$questions++;
 		my $query = $heap->{model}->resultset('packet::query')->create({
 			client_id => $cli->id,
 			server_id => $srv->id,
+			conversation_id => $conversation->id,
+			client_port => $ip->{client_port},
+			server_port => $ip->{server_port},
 			query_serial => $dnsp->header->id,
 			opcode => $dnsp->header->opcode,
 			count_questions => $dnsp->header->qdcount,
@@ -144,7 +165,7 @@ sub process {
 				type => $pq->qtype,
 				class => $pq->qclass,
 			});
-			my $rec_count = $qobj->reference_count() || 0;
+			my $ref_count = $qobj->reference_count() || 0;
 			$qobj->reference_count( $ref_count + 1 );
 			$qobj->update;
 			my $record = $heap->{model}->resultset('packet::meta::question')->create({
@@ -154,15 +175,80 @@ sub process {
 			$record->update;
 		}
 	}
+
+	# Update Conversations:
+	$conversation->answers( $answers );
+	$conversation->questions( $questions );
+	$conversation->update;
 }
 
 sub packet_logger_maintenance {
 	my ($kernel,$heap) = @_[KERNEL,HEAP];
 
+	# Purge the Query Cache
 	$heap->{qcache}->purge();
+
+	$kernel->yield('packet_logger_query_response');
+	$kernel->yield('packet_logger_client_is_server');
 
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
+}
+
+sub packet_logger_query_response {
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+	# Select Null response_id
+	my $check_ts = DateTime->now()->subtract( days => 2 );
+	my $unanswered = $heap->{model}->resultset('packet::query')->search(
+		{ response_id => undef },
+		{
+			order_by => 'query_ts',
+		},
+	);
+
+	my $updates = 0;
+	while( my $q = $unanswered->next ) {
+		my $answer = $heap->{model}->resultset('packet::response')->find(
+			{
+				conversation_id => $q->conversation_id,
+				query_serial => $q->query_serial,
+				response_ts => { -between => [ $q->query_ts->clone->subtract( seconds => 1), $q->query_ts->clone()->add( seconds => 10 )] },
+			},
+		);	
+		if( defined $answer ) {
+			$q->response_id( $answer->id );
+			$q->update;
+			$updates++;
+		}
+	}
+	$kernel->post( $heap->{log} => debug => "packet::logger::query_response linked $updates stray queries" );
+}
+
+sub packet_logger_client_is_server {
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+	my $clients = $heap->{model}->resultset('client')->search(
+		{ role_server_id => { '!=' => undef } },
+	);
+	
+	my $updates = 0;
+	while( my $cli = $clients->next ) {
+		my $conversations = $heap->model('packet::meta::conversation')->search(
+			{ 
+				client_id => $cli->id,
+				client_is_server => 0
+			}
+		);
+
+		while ( my $conv = $conversations->next ) {
+			$conv->client_is_server( 1 );
+			$conv->update;
+			$updates++;
+		}
+	}
+
+	$kernel->post( $heap->{log} => debug => "packet::logger::client_is_server updated $updates conversations" );
 }
 
 sub _get_rr_data {

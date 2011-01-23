@@ -16,9 +16,19 @@ __PACKAGE__->add_columns(
 		data_type => 'integer',
 		size => 32,
 	},
+	client_port => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
+	},
 	server_id => {
 		data_type => 'integer',
 		size => 32,
+	},
+	server_port => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
 	},
 	query_ts => {
 		data_type => 'datetime',
@@ -34,6 +44,10 @@ __PACKAGE__->add_columns(
 		data_type => 'integer',
 		size => 32,
 		is_nullable => 1,
+	},
+	conversation_id => {
+		data_type => 'integer',
+		size => 32,
 	},
 	opcode => { data_type => 'character varying', size => 12, },
 	count_questions => { data_type => 'integer', size => 32, },
@@ -55,6 +69,10 @@ __PACKAGE__->belongs_to( 'server', 'dns::monitor::Schema::server',
 
 __PACKAGE__->belongs_to('response', 'dns::monitor::Schema::packet::response',
 	{ 'foreign.id' => 'self.response_id' },
+);
+
+__PACKAGE__->has_one( 'conversation', 'dns::monitor::Schema::packet::meta::conversation',
+	{ 'foreign.id' => 'self.conversation_id' }
 );
 
 __PACKAGE__->has_many( 'query_questions', 'dns::monitor::Schema::packet::meta::question',

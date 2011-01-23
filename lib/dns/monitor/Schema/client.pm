@@ -34,7 +34,25 @@ __PACKAGE__->add_columns(
 		inflate_datetime => 1,
 		set_on_create => 1, set_on_update => 1,
 	},
+	is_local => {
+		data_type => 'bool',
+		default_value => 'FALSE',
+	},
+	role_server_id => {
+		data_type => 'integer',
+		size => 32,
+		is_nullable => 1,
+	},
 );
 __PACKAGE__->set_primary_key( 'id' );
+
+# Relationships
+__PACKAGE__->belongs_to( 'as_server' => 'dns::monitor::Schema::server',
+	{ 'foreign.id' => 'self.role_server_id' }
+);
+
+__PACKAGE__->might_have( 'server_by_ip' => 'dns::monitor::Schema::server',
+	{ 'foreign.ip' => 'self.ip' }
+);
 
 1;
