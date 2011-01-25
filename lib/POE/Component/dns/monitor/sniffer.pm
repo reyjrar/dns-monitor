@@ -158,6 +158,7 @@ sub sniffer_start {
 	$kernel->yield( 'sniffer_load_plugins' );
 
 	# Configure the Pcap Handler
+	$kernel->post( $heap->{log} => debug => "pcap::open_live : $args->{PcapOpts}{dev}" );
 	$kernel->post( pcap => open_live => @{$args->{PcapOpts}}{qw(dev snaplen promisc timeout)} );
 	$kernel->post( $heap->{log} => debug => "pcap::filter : $args->{PcapOpts}{filter}" );
 	$kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
@@ -266,7 +267,7 @@ sub sniffer_handle_sigchld {
 	my $child_pid = $child->ID;
 	$exit_code ||= 0;
 	my $exit_status = $exit_code >>8;
-	return unless $exit_code != 0;
+	#return unless $exit_code != 0;
 	$kernel->post( $heap->{log} => notice => "Received SIGCHLD from $child_pid ($exit_status)" );
 }
 #------------------------------------------------------------------------#

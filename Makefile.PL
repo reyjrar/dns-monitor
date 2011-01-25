@@ -16,12 +16,18 @@ requires 'Catalyst::Action::RenderView';
 requires 'Catalyst::View::Mason';
 requires 'Catalyst::View::RRDGraph';
 requires 'Catalyst::Model::DBIC::Schema';
+requires 'DBIx::Class';
 requires 'DBIx::Class::TimeStamp';
 requires 'Moose';
 requires 'namespace::autoclean';
 requires 'YAML';
 requires 'Config::General'; # This should reflect the config file format you've chosen
                  # See Catalyst::Plugin::ConfigLoader for supported formats
+requires 'DateTime';
+requires 'DateTime::Format::HTTP';
+requires 'DateTime::Format::Pg';
+requires 'DateTime::Format::Duration';
+requires 'CHI';
 requires 'EV';
 requires 'POE';
 requires 'POE::Component::Daemon';
@@ -29,6 +35,7 @@ requires 'POE::Component::Pcap';
 requires 'POE::Component::Logger';
 requires 'POE::Loop::EV';
 requires 'Net::DNS';
+requires 'Net::IP::Resolver';
 requires 'NetPacket';
 requires 'RRDs';
 requires 'Module::Pluggable';
