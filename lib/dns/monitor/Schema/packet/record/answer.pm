@@ -55,6 +55,9 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key( 'id' );
 
+# Constraints
+__PACKAGE__->add_unique_constraint( 'packet_record_answer_uniq_record' => [qw(class type name value opts)] );
+
 # Relationships
 __PACKAGE__->has_many( 'meta', 'dns::monitor::Schema::packet::meta::answer',
 	{ 'foreign.answer_id' => 'self.id' }

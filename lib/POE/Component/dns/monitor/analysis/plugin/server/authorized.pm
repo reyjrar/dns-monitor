@@ -85,9 +85,3 @@ sub notify {
 
 # Return True
 1;
-
-
-
-1;
-
-

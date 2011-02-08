@@ -46,12 +46,14 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key( 'id' );
 
+# Constraints
+__PACKAGE__->add_unique_constraint( 'client_uniq_ip' => [qw(ip)] );
+
 # Relationships
 __PACKAGE__->belongs_to( 'as_server' => 'dns::monitor::Schema::server',
 	{ 'foreign.id' => 'self.role_server_id' }
 );
-
-__PACKAGE__->might_have( 'server_by_ip' => 'dns::monitor::Schema::server',
+__PACKAGE__->belongs_to( 'server_by_ip' => 'dns::monitor::Schema::server',
 	{ 'foreign.ip' => 'self.ip' }
 );
 

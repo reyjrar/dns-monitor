@@ -35,12 +35,12 @@ sub server_stats_start {
 }
 
 sub process {
-	my ( $kernel,$heap,$dnsp,$ip,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2,ARG3];
+	my ( $kernel,$heap,$dnsp,$info ) = @_[KERNEL,HEAP,ARG0,ARG1];
 
 	my $dt = DateTime->now();
 	my $stats = $heap->{model}->resultset('server::stats')->find_or_create(
 		{
-			server_id	=> $srv->id,
+			server_id	=> $info->{server_id},
 			day 		=> $dt->ymd,
 		}
 	);	

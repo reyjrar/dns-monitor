@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use POE;
 use DateTime;
+use DateTime::Format::Pg;
 use YAML;
 use Try::Tiny;
 
@@ -12,7 +13,7 @@ sub spawn {
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad Model" unless ref $args{DBICSchema};
+	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -35,71 +36,77 @@ sub packet_logger_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
 
 	# Caching
 	my %_qcache = ();
 	$heap->{qcache} = CHI->new( driver => 'Memory', datastore => \%_qcache, expires_in => 90 );
 	$heap->{__qcache} = \%_qcache;
 
+	# Statement Handle Caching
+	my %SQL = (
+		query => q{select add_query( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )},
+		question => q{select find_or_create_question( ?, ?, ?, ? ) },
+		response => q{select add_response( ?, ?, ?, ?, ?, ?, ?,
+											?, ?, ?, ?, ?, ?, ?,
+											?, ?, ?, ?, ? )},
+		answer => q{select find_or_create_answer( ?, ?, ?, ?, ?, ?, ?, ? )},
+		query_response => q{select link_query_response( ?, ? )},
+	);
+	foreach my $s (keys %SQL) {
+		$heap->{sth}{$s} = $heap->{dbh}->run( fixup => sub {
+				my $sth = $_->prepare( $SQL{$s} );
+				$sth;
+			}, catch {
+				my $err = shift;
+				$kernel->post( $heap->{log} => notice => qq|packet::logger STH: $s failed: $err| );
+			}
+		);
+	}
+
 	# Trigger Maintenance
 	$kernel->delay_add( 'maintenance', 30 );
 }
 
 sub process {
-	my ( $kernel,$heap,$dnsp,$ip,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2,ARG3];
+	my ( $kernel,$heap,$dnsp,$info ) = @_[KERNEL,HEAP,ARG0,ARG1];
 
 	# Packet ID
-	my $packet_id = join(';', $srv->id, $cli->id, $dnsp->header->id );
-
-	# Handle Conversation
-	my $role_server_id = $cli->role_server_id || 0;
-	my $conversation = $heap->{model}->resultset('packet::meta::conversation')->find_or_create({
-		server_id => $srv->id,
-		client_id => $cli->id,
-	});
-	$conversation->client_is_server( defined $cli->role_server_id ? 1 : 0 );
-	$conversation->update;
-	my $answers = $conversation->answers || 0;
-	my $questions = $conversation->questions || 0;
+	my $packet_id = join(';', $info->{conversation_id}, $dnsp->header->id );
 
 	# Check for query/response
 	if( $dnsp->header->qr ) {
-		$answers++;
 		# Grab Queriy id from cache:
 		my $query_id = $heap->{qcache}->get( $packet_id );
 		# Answer
-		my $resp = $heap->{model}->resultset('packet::response')->create({
-			client_id => $cli->id,
-			server_id => $srv->id,
-			conversation_id => $conversation->id,
-			client_port => $ip->{client_port},
-			server_port => $ip->{server_port},
-			query_serial => $dnsp->header->id,
-			opcode => $dnsp->header->opcode,
-			status => $dnsp->header->rcode,
-			size_answer => $dnsp->answersize,
-			count_answer => $dnsp->header->ancount,
-			count_additional => $dnsp->header->arcount,
-			count_authority => $dnsp->header->nscount,
-			count_question => $dnsp->header->qdcount,
-			flag_authoritative => $dnsp->header->aa,
-			flag_authenticated => $dnsp->header->ad,
-			flag_truncated => $dnsp->header->tc,
-			flag_checking_desired => $dnsp->header->cd,
-			flag_recursion_desired => $dnsp->header->rd,
-			flag_recursion_available => $dnsp->header->ra,
-		});
-		$resp->update;
+		$heap->{sth}{response}->execute(
+			$info->{conversation_id},
+			$info->{client_id},
+			$info->{client_port},
+			$info->{server_id},
+			$info->{server_port},
+			$dnsp->header->id,
+			$dnsp->header->opcode,
+			$dnsp->header->rcode,
+			$dnsp->answersize,
+			$dnsp->header->ancount,
+			$dnsp->header->arcount,
+			$dnsp->header->nscount,
+			$dnsp->header->qdcount,
+			$dnsp->header->aa,
+			$dnsp->header->ad,
+			$dnsp->header->tc,
+			$dnsp->header->cd,
+			$dnsp->header->rd,
+			$dnsp->header->ra,
+		);
+
+		my ($response_id) = $heap->{sth}{response}->fetchrow_array;
+		return unless defined $response_id && $response_id > 0;
+
 		# Link Query / Response
 		if( defined $query_id ) {
-			$resp->query_id( $query_id );
-			my $qobj = $heap->{model}->resultset('packet::query')->find( $query_id );
-			if( defined $qobj ) {
-				$qobj->response_id( $resp->id );
-			}
-			$qobj->update;
-			$resp->update;
+			$heap->{sth}{query_response}->execute($query_id, $response_id);
 		}
 
 		my @sets = (
@@ -113,73 +120,49 @@ sub process {
 				
 				next unless defined $data{value} && length $data{value};
 				
-				my $aobj = $heap->{model}->resultset('packet::record::answer')->find_or_create({
-					name	=> $pa->name,
-					type	=> $pa->type,
-					class	=> $pa->class,
-					opts	=> $data{opts},
-					value	=> $data{value},
-				});
-	
-				try {	
-					my $meta = $heap->{model}->resultset('packet::meta::answer')->create({
-						ttl		=> $pa->ttl,
-						response_id => $resp->id,
-						answer_id	=> $aobj->id,
-						section => $set->{name},
-					});
-					$meta->update;
-					my $ref_count = $aobj->reference_count || 0;
-					$aobj->reference_count( $ref_count + 1 );
-					$aobj->update;
-				} catch {
-					$kernel->post( $heap->{log}, "Meta-Record Duplication in Response: $_" );
-				};
-
+				$heap->{sth}{answer}->execute(
+					$response_id,
+					$set->{name},
+					$pa->ttl,
+					$pa->class,
+					$pa->type,
+					$pa->name,
+					$data{value},
+					$data{opts},
+				);
 			}
 		}
 	}
 	else {
 		# Query
-		$questions++;
-		my $query = $heap->{model}->resultset('packet::query')->create({
-			client_id => $cli->id,
-			server_id => $srv->id,
-			conversation_id => $conversation->id,
-			client_port => $ip->{client_port},
-			server_port => $ip->{server_port},
-			query_serial => $dnsp->header->id,
-			opcode => $dnsp->header->opcode,
-			count_questions => $dnsp->header->qdcount,
-			flag_recursive => $dnsp->header->rd,
-			flag_truncated => $dnsp->header->tc,
-			flag_checking => $dnsp->header->cd,
-				
-		});
-		$query->update;
+		$heap->{sth}{query}->execute(
+			$info->{conversation_id},
+			$info->{client_id},
+			$info->{client_port},
+			$info->{server_id},
+			$info->{server_port},
+			$dnsp->header->id,
+			$dnsp->header->opcode,
+			$dnsp->header->qdcount,
+			$dnsp->header->rd,
+			$dnsp->header->tc,
+			$dnsp->header->cd
+		);
+
+		my ($query_id) = $heap->{sth}{query}->fetchrow_array;
+		return unless defined $query_id && $query_id > 0;
+
 		# Set Cache:
-		$heap->{qcache}->set( $packet_id, $query->id );
+		$heap->{qcache}->set( $packet_id, $query_id );
 		foreach my $pq ( $dnsp->question ) {
-			my $qobj = $heap->{model}->resultset('packet::record::question')->find_or_create({
-				name => $pq->qname,
-				type => $pq->qtype,
-				class => $pq->qclass,
-			});
-			my $ref_count = $qobj->reference_count() || 0;
-			$qobj->reference_count( $ref_count + 1 );
-			$qobj->update;
-			my $record = $heap->{model}->resultset('packet::meta::question')->create({
-				query_id => $query->id,
-				question_id => $qobj->id,
-			});
-			$record->update;
+			$heap->{sth}{question}->execute(
+				$query_id,
+				$pq->qclass,
+				$pq->qtype,
+				$pq->qname
+			);
 		}
 	}
-
-	# Update Conversations:
-	$conversation->answers( $answers );
-	$conversation->questions( $questions );
-	$conversation->update;
 }
 
 sub packet_logger_maintenance {
@@ -189,7 +172,7 @@ sub packet_logger_maintenance {
 	$heap->{qcache}->purge();
 
 	$kernel->yield('packet_logger_query_response');
-	$kernel->yield('packet_logger_client_is_server');
+	#$kernel->yield('packet_logger_client_is_server');
 
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
@@ -200,25 +183,45 @@ sub packet_logger_query_response {
 
 	# Select Null response_id
 	my $check_ts = DateTime->now()->subtract( days => 2 );
-	my $unanswered = $heap->{model}->resultset('packet::query')->search(
-		{ response_id => undef },
-		{
-			order_by => 'query_ts',
+	my %STH = ();
+	my %SQL = (
+		null_response => q{
+				select * from packet_query where response_id is null
+					and query_ts > ?
+					order by query_ts limit 1000
+		},
+		find_response => q{
+			select id from packet_response
+				where conversation_id = ?
+					and query_serial = ?
+					and response_ts between ? and ?
+		},
+		set_response => q{
+			update packet_query set response_id = ? where id = ?
 		},
 	);
+	foreach my $s (keys %SQL) {
+		$STH{$s} = $heap->{dbh}->run( fixup => sub {
+				my $sth = $_->prepare($SQL{$s});
+				$sth;
+			}
+		);
+	}
+
+	$STH{null_response}->execute( $check_ts->datetime );
 
 	my $updates = 0;
-	while( my $q = $unanswered->next ) {
-		my $answer = $heap->{model}->resultset('packet::response')->find(
-			{
-				conversation_id => $q->conversation_id,
-				query_serial => $q->query_serial,
-				response_ts => { -between => [ $q->query_ts->clone->subtract( seconds => 1), $q->query_ts->clone()->add( seconds => 10 )] },
-			},
-		);	
-		if( defined $answer ) {
-			$q->response_id( $answer->id );
-			$q->update;
+	while( my $q = $STH{null_response}->fetchrow_hashref ) {
+		my $qt = DateTime::Format::Pg->parse_datetime( $q->{query_ts} );
+		# Find the response
+		$STH{find_response}->execute( $q->{conversation_id}, $q->{query_serial},
+			$qt->clone->subtract( seconds => 1)->datetime, 
+			$qt->clone()->add( seconds => 10 )->datetime
+		);
+		# If we found 1, do something!
+		if( $STH{find_response}->rows == 1 ) {
+			my($response_id) = $STH{find_response}->fetchrow_array;
+			$STH{set_response}->execute( $response_id, $q->{response_id} );
 			$updates++;
 		}
 	}
@@ -234,7 +237,7 @@ sub packet_logger_client_is_server {
 	
 	my $updates = 0;
 	while( my $cli = $clients->next ) {
-		my $conversations = $heap->model('packet::meta::conversation')->search(
+		my $conversations = $heap->model('conversation')->search(
 			{ 
 				client_id => $cli->id,
 				client_is_server => 0

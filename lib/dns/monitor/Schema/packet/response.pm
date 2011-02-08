@@ -74,7 +74,7 @@ __PACKAGE__->belongs_to( 'client', 'dns::monitor::Schema::client',
 __PACKAGE__->belongs_to( 'server', 'dns::monitor::Schema::server',
 	{ 'foreign.id' => 'self.server_id' }
 );
-__PACKAGE__->has_one( 'conversation', 'dns::monitor::Schema::packet::meta::conversation',
+__PACKAGE__->has_one( 'conversation', 'dns::monitor::Schema::conversation',
 	{ 'foreign.id' => 'self.conversation_id' }
 );
 

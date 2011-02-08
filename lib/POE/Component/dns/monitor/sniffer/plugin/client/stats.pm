@@ -34,12 +34,12 @@ sub client_stats_start {
 }
 
 sub process {
-	my ( $kernel,$heap,$dnsp,$ip,$srv,$cli ) = @_[KERNEL,HEAP,ARG0,ARG1,ARG2,ARG3];
+	my ( $kernel,$heap,$dnsp,$info ) = @_[KERNEL,HEAP,ARG0,ARG1];
 
 	my $dt = DateTime->now();
 	my $stats = $heap->{model}->resultset('client::stats')->find_or_create(
 		{
-			client_id	=> $cli->id,
+			client_id	=> $info->{client_id},
 			day 		=> $dt->ymd,
 		}
 	);	

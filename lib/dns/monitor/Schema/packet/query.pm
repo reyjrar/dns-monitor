@@ -71,7 +71,7 @@ __PACKAGE__->belongs_to('response', 'dns::monitor::Schema::packet::response',
 	{ 'foreign.id' => 'self.response_id' },
 );
 
-__PACKAGE__->has_one( 'conversation', 'dns::monitor::Schema::packet::meta::conversation',
+__PACKAGE__->has_one( 'conversation', 'dns::monitor::Schema::conversation',
 	{ 'foreign.id' => 'self.conversation_id' }
 );
 

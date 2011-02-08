@@ -66,9 +66,3 @@ sub analyze {
 
 # Return True
 1;
-
-
-
-1;
-
-

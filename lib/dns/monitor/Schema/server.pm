@@ -41,8 +41,11 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key( 'id' );
 
+# Constraints
+__PACKAGE__->add_unique_constraint( 'server_uniq_ip' => [qw(ip)] );
+
 # Relationships
-__PACKAGE__->has_many('responses', 'dns::monitor::Schema::packate::response',
+__PACKAGE__->has_many('responses', 'dns::monitor::Schema::packet::response',
 	{ 'foreign.server_id' => 'self.id' }
 );
 
