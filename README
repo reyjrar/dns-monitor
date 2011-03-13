@@ -2,6 +2,17 @@ ABOUT
 
 	dns-monitor is a project aimed at providing statistics on dns usage
 
+REQUIREMENTS (Non-Perl)
+	
+	libpcap (1.1.1 recommended)
+	PostgreSQL (8.3 or later)
+	rrdtool (1.2 or later)
+
+	PostgreSQL Database
+	------------------
+	Make sure you add the PL/PgSQL Language to the database before running the install script
+
+
 AUTHOR
 	Brad Lhotsky <brad.lhotsky@gmail.com>
 	http://twitter.com/reyjrar
@@ -33,6 +44,7 @@ INSTALL
 CONFIGURATION
 
 	dns_monitor.yml is YAML, no, it's not JSON.
+    (don't mix tabs and spaces, you will regret it)
 
 PROBLEMS
 

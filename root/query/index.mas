@@ -3,6 +3,7 @@
 	$most_asked_rs
 </%args>
 
+<h2>Newest Question</h2>
 <table class="display" id="newQueries">
 <thead>
   <tr>
@@ -22,6 +23,8 @@
 </tbody>
 </table>
 
+<hr class="space">
+<h2>Most Asked</h2>
 <table class="display" id="mostAskedQueries">
 <thead>
   <tr>

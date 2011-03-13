@@ -54,13 +54,17 @@ sub auto :Private {
 	my ( $self, $c ) = @_;
 
 	my $args = $c->req->params;
+	if ( !exists $c->session->{modes} ) {
+		$c->session->{modes} = {};
+	}
 
 	if( exists $args->{debug} ) {
 		if ( $args->{debug} eq 'enable' ) {
-			$c->session->{debug} = 1;
+			$c->session->{modes}{devel} = 1;
+			$c->session->{modes}{debug} = 1;
 		}
 		else {
-			$c->session->{debug} = 0;
+			$c->session->{modes}{debug} = 0;
 		}
 	}
 	return 1;

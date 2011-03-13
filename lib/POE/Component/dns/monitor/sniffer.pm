@@ -22,6 +22,8 @@ use Try::Tiny;
 # POE
 use POE qw( Component::Pcap );
 
+use dns::monitor::rrd;
+
 =head1 NAME
 
 POE::Component::dns::monitor::sniffer - Passive DNS Monitoring
@@ -42,9 +44,10 @@ our $VERSION = '0.02';
 
 	my $snif_sess_id = POE::Component::dns::monitor::sniffer->spawn(
 			Config		=> $configFile,			# Required
-			DBICSchema	=> $model,				# Required
+			DBH			=> $dbh,				# Required
 			LogSID		=> 'log',				# Default
 			PcapOpts	=> \%pcapOpts,			# See below for details
+			RRDOpts		=> \%rrdOpts			# See below for details
 			Plugins		=> \%pluginConfig,		# See below for details
 	);
 
@@ -62,7 +65,7 @@ Parameters:
 
 	B<Config> is a filename to a YAML Config File.
 
-	B<DBICSchema> is a DBIx::Class::Schema object that's connected.
+	B<DBH> is a DBI object that's connected.
 
 	B<LogSID> is the Session ID of a POE::Component::Logger session or your custom logging
 	session capable of handling standard log level events.
@@ -71,6 +74,8 @@ Parameters:
 		Defaults to:
 			{ dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 }
 		You should really send something more interesting than that
+
+	B<RRDOpts> is a hash ref for basic RRD Configuration Options
 
 	B<Plugins> is a hash ref for plugin options
 		Defaults to:
@@ -87,7 +92,7 @@ sub spawn {
 
 	# Process Arguments
 	my %args = (
-		DBICSchema 		=> undef,
+		DBH 		=> undef,
 		LogSID			=> 'log',
 		@_
 	);
@@ -120,7 +125,7 @@ sub spawn {
 	my $pcap_session_id = POE::Component::Pcap->spawn(
 		Alias		=> 'pcap',
 		Device		=> $args{PcapOpts}->{dev},
-		Dispatch	=> 'handle_packet',
+		Dispatch	=> 'handle_packets',
 		Session		=> 'sniffer',
 	);
 
@@ -133,8 +138,9 @@ sub spawn {
 			sniffer_start 			=> \&sniffer_start,
 			sniffer_load_plugins	=> \&sniffer_load_plugins,
 			sniffer_stats			=> \&sniffer_stats,
-			# Actually handle the packet
-			handle_packet			=> \&sniffer_handle_packet,
+			# Actually handle the packets
+			handle_packets			=> \&sniffer_handle_packets,
+			dns_parse				=> \&sniffer_dns_parse,
 		},
 	);
 
@@ -146,8 +152,9 @@ sub sniffer_start {
 
 	# Store the Args in the Heap
 	$heap->{_config} = $args->{Config};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
 	$heap->{log} = $args->{LogSID};
+	$heap->{_rrd} = $args->{RRDOpts};
 	$heap->{_plugins} = $args->{Plugins};
 	$heap->{_pcap} = $args->{PcapOpts};
 
@@ -157,16 +164,30 @@ sub sniffer_start {
 	# Load the Plugins
 	$kernel->yield( 'sniffer_load_plugins' );
 
+	# Caching
+	my %_conv_cache = ();
+	my %_cli_cache = ();
+	my %_srv_cache = ();
+
 	# Configure the Pcap Handler
 	$kernel->post( $heap->{log} => debug => "pcap::open_live : $args->{PcapOpts}{dev}" );
 	$kernel->post( pcap => open_live => @{$args->{PcapOpts}}{qw(dev snaplen promisc timeout)} );
 	$kernel->post( $heap->{log} => debug => "pcap::filter : $args->{PcapOpts}{filter}" );
 	$kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
 		if exists $args->{PcapOpts}{filter} && length $args->{PcapOpts}{filter};
-	$kernel->post( pcap => 'run' );
+	$kernel->call( pcap => 'run' );
+
+
+	# RRD Tracking Performance
+	$heap->{sniffer_rrd} = dns::monitor::rrd->new( 'sniffer',
+		RootDir => $heap->{_rrd}{dir},
+		DataSources => {
+			count => q{GAUGE 120 0 U},
+		},
+	);
 
 	# Initialize Statistics Engine
-	$kernel->delay_add( 'sniffer_stats', 60 );
+	$kernel->yield('sniffer_stats');
 }
 
 sub sniffer_load_plugins {
@@ -201,7 +222,7 @@ sub sniffer_load_plugins {
 			$loadedPlugins{$name} = $plugin->spawn(
 				Alias => $name,
 				Config => $pluginConf,
-				DBICSchema => $heap->{model},
+				DBH => $heap->{dbh},
 				LogSID => $heap->{log},
 			);
 		} catch {
@@ -215,9 +236,10 @@ sub sniffer_load_plugins {
 #------------------------------------------------------------------------#
 # sniffer_handle_packet
 #  - dispatch the packet to the parser
-sub sniffer_handle_packet {
+sub sniffer_handle_packets {
 	my ($kernel,$heap,$packets) = @_[KERNEL,HEAP,ARG0];
 
+	increment_stat( $heap, 'dispatch' );
 	foreach my $inst ( @{ $packets } )  {
 		my ($hdr, $pkt) = @{ $inst };
 		next unless defined $hdr;
@@ -225,7 +247,6 @@ sub sniffer_handle_packet {
 	
 		#
 		# Begin Decoding
-		my $eth_pkt = NetPacket::Ethernet->decode( $pkt );
 		my $ip_pkt  = NetPacket::IP->decode( eth_strip($pkt) );
 	
 		return unless defined $ip_pkt;
@@ -233,7 +254,7 @@ sub sniffer_handle_packet {
 
 		# Handle UDP Packets
 		if( $ip_pkt->{proto} == IP_PROTO_UDP ) {
-			my $udp = NetPacket::UDP->decode( ip_strip( eth_strip($pkt) ) );
+			my $udp = NetPacket::UDP->decode( $ip_pkt->{data} );
 			my %ip = (
 				src_ip => $ip_pkt->{src_ip},
 				src_port => $udp->{src_port},
@@ -241,11 +262,11 @@ sub sniffer_handle_packet {
 				dest_port => $udp->{dest_port},
 			);
 			increment_stat( $heap, 'udp' );
-			dns_parse( $udp, \%ip, $heap );
+			$kernel->yield( dns_parse => $udp, \%ip );
 		}
 		# Handle TCP Packets
 		elsif ( $ip_pkt->{proto} == IP_PROTO_TCP ) {
-			my $tcp = NetPacket::TCP->decode( ip_strip( eth_strip($pkt) ) );
+			my $tcp = NetPacket::TCP->decode( $ip_pkt->{data} );
 			my %ip = (
 				src_ip => $ip_pkt->{src_ip},
 				src_port => $tcp->{src_port},
@@ -253,7 +274,7 @@ sub sniffer_handle_packet {
 				dest_port => $tcp->{dest_port},
 			);
 			increment_stat( $heap, 'tcp' );
-			dns_parse( $tcp, \%ip, $heap );
+			$kernel->yield( dns_parse => $tcp, \%ip );
 		}
 		else {
 			increment_stat( $heap, 'invalid' );
@@ -267,12 +288,12 @@ sub sniffer_handle_sigchld {
 	my $child_pid = $child->ID;
 	$exit_code ||= 0;
 	my $exit_status = $exit_code >>8;
-	#return unless $exit_code != 0;
+	return unless $exit_code != 0;
 	$kernel->post( $heap->{log} => notice => "Received SIGCHLD from $child_pid ($exit_status)" );
 }
 #------------------------------------------------------------------------#
-sub dns_parse {
-	my ($layer4, $ip, $heap) = @_;
+sub sniffer_dns_parse {
+	my ($kernel,$heap,$layer4,$ip) = @_[KERNEL,HEAP,ARG0,ARG1];
 
 	# Parse DNS Packet
 	my $dnsp = Net::DNS::Packet->new( \$layer4->{data} );
@@ -284,26 +305,43 @@ sub dns_parse {
 	my $qa = $dnsp->header->qr ? 'answer' : 'question';
 	increment_stat( $heap, $qa );
 
-	my %ip = ();
+	my %info = ();
 	if( $qa eq 'answer' ) {
-		$ip{server} = $ip->{src_ip};
-		$ip{server_port} = $ip->{src_port};
-		$ip{client} = $ip->{dest_ip}; 
-		$ip{client_port} = $ip->{dest_port};
+		$info{server} = $ip->{src_ip};
+		$info{server_port} = $ip->{src_port};
+		$info{client} = $ip->{dest_ip}; 
+		$info{client_port} = $ip->{dest_port};
 	}
 	else {
-		$ip{server} = $ip->{dest_ip};
-		$ip{server_port} = $ip->{dest_port};
-		$ip{client} = $ip->{src_ip};
-		$ip{client_port} = $ip->{src_port};
+		$info{server} = $ip->{dest_ip};
+		$info{server_port} = $ip->{dest_port};
+		$info{client} = $ip->{src_ip};
+		$info{client_port} = $ip->{src_port};
 	}
 
-	# Client and Server Objects
-	my $srv = $heap->{model}->resultset('server')->find_or_create( { ip => $ip{server} } );
-	my $cli = $heap->{model}->resultset('client')->find_or_create( { ip => $ip{client} } );
+	# Conversations
+	my $dbError = undef;
+	my $sth = $heap->{dbh}->run( fixup => sub {
+			my $sth = $_->prepare('select * from find_or_create_conversation( ?, ? )');
+			$sth->execute( $info{client}, $info{server} );
+			$sth;
+		}, catch {
+			$dbError = "find_or_create_conversation failed: $_";
+		}
+	);
+	if( $dbError || $sth->rows == 0 ) {
+		$kernel->post( $heap->{log} => notice => qq|conversation tracking failed between $info{client} and $info{server}| );
+		return;
+	}
+	my $convo = $sth->fetchrow_hashref;
+	my %ID = (
+		client_id => $convo->{client_id},
+		server_id => $convo->{server_id},
+		conversation_id => $convo->{id},
+	);
 
 	foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
-		$poe_kernel->post( $plugin_name => process => $dnsp, \%ip, $srv, $cli );
+		$kernel->post( $plugin_name => process => $dnsp, { %info, %ID } );
 		increment_stat( $heap, "plugin::$plugin_name" );
 	}
 }
@@ -315,7 +353,7 @@ sub sniffer_stats {
 	my $stats = delete $heap->{stats};
 
 	my @pairs = ();
-	foreach my $k (qw( packet invalid udp port53 dns question answer )) {
+	foreach my $k (qw( dispatch packet invalid udp tcp port53 dns question answer )) {
 		if( exists $stats->{$k} ) {
 			push @pairs, "$k=$stats->{$k}";
 		}	
@@ -324,6 +362,16 @@ sub sniffer_stats {
 		push @pairs, "$plugin=$stats->{$plugin}";
 	}
 	$kernel->post( log => 'debug' => 'STATS: ' . join(', ', @pairs) );
+
+	# RRD Track these
+	my @tracked = (qw(dispatch packet udp tcp question answer), 
+		map { join('::', 'plugin', $_ ) } keys %{ $heap->{_loaded_plugins} }
+	);
+	foreach my $stat ( @tracked ) {
+		my @path = split /\:\:/, $stat;
+		my $rrd = $heap->{sniffer_rrd}->find_or_create( \@path );
+		$rrd->update( { count => exists $stats->{$stat} ? $stats->{$stat} : 0 } );
+	}
 
 	# Redo Stats Event
 	$kernel->delay_add( 'sniffer_stats', 60 );

@@ -6,6 +6,8 @@ use File::Spec;
 use File::Basename;
 use Carp;
 
+use dns::monitor::rrd::instance;
+
 use strict;
 use warnings;
 
@@ -14,66 +16,39 @@ use warnings;
 
 =head1 SYNOPSIS
 
-	my $rrd = dns::monitor::rrd->new( 'packet::query',
+	my $RRDNetwork = dns::monitor::rrd->new( 'network::traffic', 
 		RootDir => '/var/rrd'
-		Variables => {
-			types => {
-				names => [qw(A CNAME MX PTR SRV TXT other)],
-				data => {	
-					packets => [qw(GAUGE 600 0 U)],
-					bytes => [qw(GAUGE 600 0 U)],
-				},
-			},
-			opcodes => {
-				names => [qw(QUERY UPDATE other)],
-				data => {	
-					packets => [qw(GAUGE 600 0 U)],
-					bytes => [qw(GAUGE 600 0 U)],
-				},
-			},
-		}
+		DataSources => {	
+				packets => q{GAUGE 600 0 U},
+				bytes => q{GAUGE 600 0 U},
+		},
+		Step => 60,
 		Archives => [qw(
-			RRA:AVERAGE:0.5:1:576	
-			RRA:AVERAGE:0.5:8:576	
-			RRA:AVERAGE:0.5:32:576	
-			RRA:AVERAGE:0.5:372:576	
+			RRA:AVERAGE:0.5:2:770	
+			RRA:AVERAGE:0.5:8:770	
+			RRA:AVERAGE:0.5:32:770	
+			RRA:AVERAGE:0.5:372:770	
 		)]
 	);
 
-	$rrd->update( types => {
-		A => { packets => 1, bytes => 512 },
-		CNAME => { packets => 2, bytes => 1024 },
-		...
-	});
+	my $instance = $RRDNetwork->find_or_create( [qw(hosts myhost tcp)] );
 
-	$rrd->graph( types => {
-		data => 'packets',
-	});
+	$instance->update( packets => 1, bytes => 512 );
 
 =cut
 
 sub new {
-	my ( $meta, $class, %opts ) = @_;
+	my ( $meta, $class, %Config ) = @_;
 	my $self = bless {}, ref $meta ? ref $meta : $meta;
 
-	my %Config = (
-		Archives => [qw(
-			RRA:AVERAGE:0.5:1:576	
-			RRA:AVERAGE:0.5:8:576	
-			RRA:AVERAGE:0.5:32:576	
-			RRA:AVERAGE:0.5:372:576	
-		)],
-		%opts
-	); 
-
-	die "Variables not properly initialized." unless _config_check_variables( \%Config );
 	die "RootDir not set." unless exists $Config{RootDir} && length $Config{RootDir};
+	my $root = File::Spec->rel2abs( $Config{RootDir} );
 
 	mkdir( $Config{RootDir}, 0755 ) unless -d $Config{RootDir};
 
 	# Build the RRD Path
 	my @rrdpath = split('\:\:', $class);
-	my $dir = $Config{RootDir};
+	my $dir = $root;
 	foreach my $sub (@rrdpath) {
 		$dir = File::Spec->catdir( $dir, $sub );
 		mkdir( $dir, 0755 ) unless -d $dir;
@@ -81,57 +56,34 @@ sub new {
 
 	# Store the base directory
 	$self->{_rrd_base} = $dir;
-	$self->{_variables} = $Config{Variables};
+	$self->{_data_sources} = $Config{DataSources};
+	$self->{_archives} = $Config{Archives} if exists $Config{Archives};
+	$self->{_step} = exists $Config{Step} && $Config{Step} > 0 ? $Config{Step} : 60;
 
-	$self->setup_rrd( @{ $Config{Archives} } );
+	return $self;
+
 }
 
-sub setup_rrd {
-	my ( $self, @archives ) = @_;
-
-	while( my ($var,$info) = each %{ $self->{_variables} } ) {
-		my $dir = File::Spec->catdir( $self->{_rrd_base}, $var );
-		mkdir( $dir, 0755 ) unless -d $dir;
-		foreach my $name (@{ $info->{names} }) {
-			my $rrd = File::Spec->catfile( $dir, $name . '.rrd' );
-			$self->{_rrds}->{$var}{$name} = $rrd;
-			next if -e $rrd;
-			# Build out the RRD
-			my @opts = qw(--step 60);
-			while( my ($field,$ds_opts) = each %{ $info->{data} } ) {
-				push @opts, qq{DS:$field:} . join(':', @{ $ds_opts } );
-			}
-			push @opts, @{ $self->{_archives} };
-			RRDs::create $rrd, @opts;
-			my $err = RRDs::error;
-			if( $err ) {
-				carp "error creating rrd ($rrd): $err";
-			}
-		}
+sub find_or_create {
+	my ($self,$path) = @_;
+	
+	my $file = pop @{ $path };
+	my $rrdfile = File::Spec->catfile( $self->{_rrd_base}, @$path, "$file.rrd" );
+	my $instance = undef;
+	if( -f $rrdfile ) {
+		$instance = dns::monitor::rrd::instance->from_file( $rrdfile );
 	}
-}
-
-sub step {
-	my ($self, $data) = @_;
-}
-
-sub _config_check_variables {
-	my $href = shift;
-
-	return 0 unless defined $href;
-	return 0 unless exists $href->{Variables};
-	return 0 unless ref $href->{Variables} eq 'HASH';
-	foreach my $name ( keys %{ $href->{Variables} } ) {
-		my $var_ref = $href->{Variables}{$name};
-		return 0 unless ref $var_ref eq 'HASH';
-		return 0 unless exists $var_ref->{names} && ref $var_ref->{names} eq 'ARRAY';
-		return 0 unless exists $var_ref->{data} && ref $var_ref->{data} eq 'HASH';
-		while( my ( $name, $aref ) = each %{ %$var_ref->{data} } ) {
-			return 0 if scalar @{ $aref } != 4;
-		}
+	else {
+		my %opts = (
+			File => $rrdfile,
+			DataSources => $self->{_data_sources},
+			Step => $self->{_step},
+		);
+		$opts{Archives} = $self->{_archives} if exists $self->{_archives};
+		$instance = dns::monitor::rrd::instance->new( %opts );
 	}
+	return $instance;
 }
-
 
 # Return True;
 1;

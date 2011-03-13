@@ -16,11 +16,13 @@ requires 'Catalyst::Action::RenderView';
 requires 'Catalyst::View::Mason';
 requires 'Catalyst::View::RRDGraph';
 requires 'Catalyst::Model::DBIC::Schema';
+requires 'DBIx::Connector';
 requires 'DBIx::Class';
 requires 'DBIx::Class::TimeStamp';
 requires 'Moose';
 requires 'namespace::autoclean';
 requires 'YAML';
+requires 'Try::Tiny';
 requires 'Config::General'; # This should reflect the config file format you've chosen
                  # See Catalyst::Plugin::ConfigLoader for supported formats
 requires 'DateTime';

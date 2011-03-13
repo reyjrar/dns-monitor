@@ -1,0 +1,49 @@
+---
+install:
+  base:
+    - server
+    - client 
+    - conversation
+    - find_or_create_conversation
+
+  plugins:
+    # Client Statistics
+    client::stats:
+      level: 0
+      entities:
+        - client_stats
+        - client_stats_update
+
+    # Server Statistics
+    server::stats:
+      level: 0
+      entities:
+        - server_stats
+        - server_stats_update
+
+    # Packet Logger Tables/Function
+    packet::logger:
+      level: 1
+      entities:
+        - packet_record_question
+        - packet_record_answer
+        - packet_query
+        - packet_meta_question
+        - packet_response
+        - packet_meta_answer
+        - packet_meta_query_response
+        - add_query
+        - add_response
+        - link_query_response
+        - find_or_create_question
+        - find_or_create_answer
+
+    # Zone Discovery Tables/Functions
+    zone::discovery:
+      level: 2
+      entities:
+        - zone
+        - zone_answer
+        - zone_question
+        - get_zone_id
+        - zone_tree

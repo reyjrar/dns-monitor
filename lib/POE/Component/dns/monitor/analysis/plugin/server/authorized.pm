@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use POE;
 use DateTime;
+use DateTime::Format::Pg;
 use YAML;
 
 sub spawn {
@@ -11,7 +12,7 @@ sub spawn {
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad Model" unless ref $args{DBICSchema};
+	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -32,7 +33,7 @@ sub server_authorized_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
 	$heap->{interval} = $args->{Config}{interval} || 3600;
 	$heap->{authorized} = $args->{Config}{authorized} || [];
 
@@ -44,30 +45,45 @@ sub server_authorized_start {
 sub analyze {
 	my ( $kernel,$heap ) = @_[KERNEL,HEAP];
 
-	$kernel->post( $heap->{log} => debug => "server::authorized running analysis" );
+	$kernel->call( $heap->{log} => debug => "server::authorized running analysis" );
+
+	my %SQL = (
+		check => 'select * from server',
+		update => 'update server set is_authorized = ? where id = ?',
+	);
+	my %STH = ();
+	foreach my $s (keys %SQL) {
+		$STH{$s} = $heap->{dbh}->run( fixup => sub {
+				my $sth = $_->prepare( $SQL{$s} );
+				$sth;
+			}
+		);
+	}
 
 	my $check_ts = DateTime->now()->subtract( seconds => $heap->{interval} );
-	my $srv_rs = $heap->{model}->resultset('server')->search;
+	$STH{check}->execute();
 
 	my $updates = 0;
-	while( my $srv = $srv_rs->next ) {
+	while( my $ent = $STH{check}->fetchrow_hashref ) {
 		my $doUpdate = 0;
-		if( grep { $srv->ip eq $_ } @{ $heap->{authorized} } ) {
-			if( ! $srv->is_authorized ) {
-				$srv->is_authorized( 1 );
+		my $value = undef;
+		if( grep { $ent->{ip} eq $_ } @{ $heap->{authorized} } ) {
+			if( ! $ent->{is_authorized} ) {
+				$value = 1;
 				$doUpdate = 1;
 			}
 		}
 		else {
-			if( $srv->is_authorized ) {
-				$srv->is_authorized( 0 );
+			if( $ent->{is_authorized} ) {
+				$value = 0;
 				$doUpdate = 1;
 			}
 		}
 		if( $doUpdate ) {
-			$srv->update;
-			if( $srv->first_ts > $check_ts ) {
-				$kernel->yield( 'notify' => $srv );
+			$STH{update}->execute( $value, $ent->{id} );
+			my $first_ts = DateTime::Format::Pg->parse_datetime( $ent->{first_ts} );
+			if( $first_ts > $check_ts ) {
+				$kernel->yield( 'notify' => $ent );
 			}
 		}
 		$updates += $doUpdate;
@@ -85,9 +101,3 @@ sub notify {
 
 # Return True
 1;
-
-
-
-1;
-
-

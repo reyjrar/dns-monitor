@@ -12,7 +12,7 @@ sub spawn {
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad Model" unless ref $args{DBICSchema};
+	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -33,7 +33,7 @@ sub client_local_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
 	$heap->{interval} = $args->{Config}{interval} || 3600;
 	$heap->{resolver} = Net::IP::Resolver->new();
 	my $networks = ref $args->{Config}{clients} eq 'ARRAY' ? $args->{Config}{clients} : undef;
@@ -53,30 +53,44 @@ sub client_local_start {
 sub analyze {
 	my ( $kernel,$heap ) = @_[KERNEL,HEAP];
 
-	$kernel->post( $heap->{log} => debug => "client::local running analysis" );
+	$kernel->call( $heap->{log} => debug => "client::local running analysis" );
 
 	my $check_ts = DateTime->now()->subtract( seconds => $heap->{interval} );
-	my $cli_rs = $heap->{model}->resultset('client')->search;
+	my %SQL = ( 
+		'check' => q{select * from client},
+		'update' => q{update client set is_local = ? where id = ?},
+	);
+	my %STH = ();
+	foreach my $s ( keys %SQL ) {
+		$STH{$s} = $heap->{dbh}->run( fixup => sub {
+			my $sth = $_->prepare( $SQL{$s} );
+			$sth;
+		});
+	}
+
+	$STH{check}->execute();
 
 	my $updates = 0;
-	while( my $cli = $cli_rs->next ) {
+	while( my $ent = $STH{check}->fetchrow_hashref ) {
 		my $doUpdate = 0;
-		if( $heap->{resolver}->find_first( $cli->ip ) ) {
-			if( ! $cli->is_local ) {
-				$cli->is_local( 1 );
+		my $value = undef;
+		if( $heap->{resolver}->find_first( $ent->{ip} ) ) {
+			if( ! $ent->{is_local} ) {
+				$value = 1;
 				$doUpdate = 1;
 			}
 		}
 		else {
-			if( $cli->is_local ) {
-				$cli->is_local( 0 );
+			if( $ent->{is_local} ) {
+				$value = 0;
 				$doUpdate = 1;
 			}
 		}
 		if( $doUpdate ) {
-			$cli->update;
-			if( $cli->first_ts > $check_ts ) {
-				$kernel->yield( 'notify' => $cli );
+			$STH{update}->execute( $value, $ent->{id} );
+			my $first_ts = DateTime::Format::Pg->parse_datetime( $ent->{first_ts} );
+			if( $first_ts > $check_ts ) {
+				$kernel->yield( 'notify' => $ent );
 			}
 		}
 		$updates += $doUpdate;
@@ -94,9 +108,3 @@ sub notify {
 
 # Return True
 1;
-
-
-
-1;
-
-

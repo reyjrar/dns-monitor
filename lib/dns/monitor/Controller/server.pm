@@ -25,7 +25,7 @@ Catalyst Controller.
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-	my $dt = DateTime->now()->subtract( days => 7 );
+	my $dt = DateTime->now(time_zone => $c->config->{time_zone})->subtract( days => 7 );
 	my $recent_rs = $c->model('DB::server')->search(
 		{ first_ts => { '>', $dt->datetime } },
 		{ order_by => { -desc => 'first_ts' } },
@@ -45,7 +45,7 @@ Display Statistics for the Date
 sub stats_index :Path('stats') :Args(0) {
 	my ($self,$c) = @_;
 	
-	my $day = DateTime->now->ymd;
+	my $day = DateTime->now( time_zone => $c->config->{time_zone} )->ymd;
 
 	$c->forward( '/server/stats', $day );
 	$c->detach;
@@ -54,7 +54,7 @@ sub stats_index :Path('stats') :Args(0) {
 sub stats :Path('stats') :Args(1) {
 	my ( $self, $c, $day ) = @_;
 	if( $day !~ /[0-9]{4}-[0-9]{2}-[0-9]{2}/ ) {
-		$day = DateTime->now->ymd;
+		$day = DateTime->now( time_zone => $c->config->{time_zone} )->ymd;
 	}
 
 	# Don't need sorting, dataTables does that

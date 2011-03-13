@@ -36,7 +36,7 @@ our $VERSION = '0.01';
 
 	my $snif_sess_id = POE::Component::dns::monitor::analysis->spawn(
 			Config		=> $configFile,			# Required
-			DBICSchema	=> $model,				# Required
+			DBH			=> $dbh,				# Required
 			LogSID		=> 'log',				# Default
 			Plugins		=> \%pluginConfig,		# See below for details
 	);
@@ -55,7 +55,7 @@ Parameters:
 
 	B<Config> is a filename to a YAML Config File.
 
-	B<DBICSchema> is a DBIx::Class::Schema object that's connected.
+	B<DBH> is a DBIx::Connector object that's connected.
 
 	B<LogSID> is the Session ID of a POE::Component::Logger session or your custom logging
 	session capable of handling standard log level events.
@@ -66,6 +66,7 @@ Parameters:
 			'server::authorized'	=> { enable => 1 },
 			'server::stats'			=> { enable => 1, rrd => 1 },
 			'client::stats'			=> { enable => 1, rrd => 1 },
+			'query::response'		=> { enable => 1 },
 		}
 =cut
 
@@ -74,19 +75,19 @@ sub spawn {
 
 	# Process Arguments
 	my %args = (
-		DBICSchema 		=> undef,
+		DBH 			=> undef,
 		LogSID			=> 'log',
 		@_
 	);
 	# Defaults
-	my %pcapOpts = ( dev => 'any', snaplen => 1518, filter => 'udp and port 53', promisc => 0 );
 	my %pluginConfig = (
 		'server::authorized'	=> { enable => 1 },
 		'server::stats'			=> { enable => 1, rrd => 1 },
 		'client::stats'			=> { enable => 1, rrd => 1 },
+		'query::response'		=> { enable => 1 },
 	);
 	# Hashify
-	foreach my $hashOpt(qw( Plugins PcapOpts ) ) {
+	foreach my $hashOpt(qw( Plugins ) ) {
 		$args{$hashOpt} = ref $args{$hashOpt} eq 'HASH' ? $args{$hashOpt} : {};
 	}
 	# Configure Defaults: Plugins
@@ -118,7 +119,7 @@ sub analysis_start {
 
 	# Store the Args in the Heap
 	$heap->{_config} = $args->{Config};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
 	$heap->{log} = $args->{LogSID};
 	$heap->{_plugins} = $args->{Plugins};
 
@@ -163,11 +164,12 @@ sub analysis_load_plugins {
 			$loadedPlugins{$name} = $plugin->spawn(
 				Alias => $name,
 				Config => $pluginConf,
-				DBICSchema => $heap->{model},
+				DBH => $heap->{dbh},
 				LogSID => $heap->{log},
 			);
 		} catch {
 			$kernel->post( $heap->{log} => warning => "plugin::$name : unable to spawn: $_" );
+			delete $loadedPlugins{$name};
 		};
 	}
 	$heap->{_loaded_plugins} = \%loadedPlugins;
