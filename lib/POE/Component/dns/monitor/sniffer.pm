@@ -182,7 +182,7 @@ sub sniffer_start {
 	$heap->{sniffer_rrd} = dns::monitor::rrd->new( 'sniffer',
 		RootDir => $heap->{_rrd}{dir},
 		DataSources => {
-			count => q{GAUGE 600 0 U},
+			count => q{GAUGE 120 0 U},
 		},
 	);
 

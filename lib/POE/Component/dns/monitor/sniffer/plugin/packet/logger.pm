@@ -171,87 +171,8 @@ sub packet_logger_maintenance {
 	# Purge the Query Cache
 	$heap->{qcache}->purge();
 
-	$kernel->yield('packet_logger_query_response');
-	#$kernel->yield('packet_logger_client_is_server');
-
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
-}
-
-sub packet_logger_query_response {
-	my ($kernel,$heap) = @_[KERNEL,HEAP];
-
-	# Select Null response_id
-	my $check_ts = DateTime->now()->subtract( days => 2 );
-	my %STH = ();
-	my %SQL = (
-		null_response => q{
-				select * from packet_query where response_id is null
-					and query_ts > ?
-					order by query_ts limit 1000
-		},
-		find_response => q{
-			select id from packet_response
-				where conversation_id = ?
-					and query_serial = ?
-					and response_ts between ? and ?
-		},
-		set_response => q{
-			update packet_query set response_id = ? where id = ?
-		},
-	);
-	foreach my $s (keys %SQL) {
-		$STH{$s} = $heap->{dbh}->run( fixup => sub {
-				my $sth = $_->prepare($SQL{$s});
-				$sth;
-			}
-		);
-	}
-
-	$STH{null_response}->execute( $check_ts->datetime );
-
-	my $updates = 0;
-	while( my $q = $STH{null_response}->fetchrow_hashref ) {
-		my $qt = DateTime::Format::Pg->parse_datetime( $q->{query_ts} );
-		# Find the response
-		$STH{find_response}->execute( $q->{conversation_id}, $q->{query_serial},
-			$qt->clone->subtract( seconds => 1)->datetime, 
-			$qt->clone()->add( seconds => 10 )->datetime
-		);
-		# If we found 1, do something!
-		if( $STH{find_response}->rows == 1 ) {
-			my($response_id) = $STH{find_response}->fetchrow_array;
-			$STH{set_response}->execute( $response_id, $q->{response_id} );
-			$updates++;
-		}
-	}
-	$kernel->post( $heap->{log} => debug => "packet::logger::query_response linked $updates stray queries" );
-}
-
-sub packet_logger_client_is_server {
-	my ($kernel,$heap) = @_[KERNEL,HEAP];
-
-	my $clients = $heap->{model}->resultset('client')->search(
-		{ role_server_id => { '!=' => undef } },
-	);
-	
-	my $updates = 0;
-	while( my $cli = $clients->next ) {
-		my $conversations = $heap->model('conversation')->search(
-			{ 
-				client_id => $cli->id,
-				client_is_server => 0
-			}
-		);
-
-		while ( my $conv = $conversations->next ) {
-			$conv->client_is_server( 1 );
-			$conv->update;
-			$updates++;
-		}
-	}
-
-	$kernel->post( $heap->{log} => debug => "packet::logger::client_is_server updated $updates conversations" );
 }
 
 sub _get_rr_data {

@@ -4,6 +4,11 @@
 
 <h3>recently added features</h3>
 <ul>
-  <li>client::stats interface</li>
-  <li>server::stats interface</li>
+  <li>devel::sniffer statistics tracking</li>
+  <li>RRDTool integration</li>
+  <li>Converted sniffer from DBIx::Class to stored procedures for speed.</li>
+  <li>client::stats interface (broken)</li>
+  <li>server::stats interface (broken)</li>
 </ul>
+
+

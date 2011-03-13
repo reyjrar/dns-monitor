@@ -9,7 +9,7 @@ sub spawn {
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad Model" unless ref $args{DBICSchema};
+	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -29,7 +29,7 @@ sub client_as_server_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
 	$heap->{interval} = $args->{Config}{interval} || 3600;
 
 	# Schedule the Analysis
@@ -40,23 +40,30 @@ sub client_as_server_start {
 sub analyze {
 	my ( $kernel,$heap ) = @_[KERNEL,HEAP];
 
-	$kernel->post( $heap->{log} => debug => "client::as_server running analysis" );
+	$kernel->call( $heap->{log} => debug => "client::as_server running analysis" );
 
-	my $cli_rs = $heap->{model}->resultset('client')->search(
-		{ 'role_server_id' => { '!=' => undef } },
-		{
-			prefetch => 'server_by_ip',
-		}
+	my %SQL = (
+		check => q{select client.id as client_id, server.id as server_id
+					from client
+						inner join server on client.ip = server.ip
+					where client.role_server_id is null
+		},
+		update => q{update client set role_server_id = ? where id = ? },
 	);
+	my %STH = ();
+	foreach my $s ( keys %SQL ) {
+		$STH{$s} = $heap->{dbh}->run( fixup => sub {
+				my $sth = $_->prepare( $SQL{$s} );
+				$sth;
+		});
+	}
+
+	$STH{check}->execute();
 
 	my $updates = 0;
-	while( my $cli = $cli_rs->next ) {
-		my $srv = $cli->server_by_ip;
-		if( defined $srv ) {
-			$cli->role_server_id( $srv->id );
-			$cli->update;
-			$updates++;
-		}
+	while( my $ent = $STH{check}->fetchrow_hashref ) {
+		$STH{update}->execute( $ent->{server_id}, $ent->{client_id} );
+		$updates++;
 	}
 	$kernel->post( $heap->{log} => debug => "client::as_server posted $updates updates");
 

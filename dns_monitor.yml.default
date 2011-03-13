@@ -1,6 +1,7 @@
 ---
 name: dns::monitor
 log_cfg: ./conf/logging.conf
+time_zone: America/New_York
 rrd: &GLOBALrrd
   dir: ./cache/rrd
   types:
@@ -24,9 +25,9 @@ network:
     - 192.168.1.0/24
 
 db:
-  dsn: dbi:SQLite:./cache/db/dnsmonitor.db
-  user:
-  pass:
+  dsn: dbi:Pg:host=localhost;database=dnsmonitor
+  user: dnsmon
+  pass: w8nC
 
 pcap:
   dev: any
@@ -61,3 +62,6 @@ plugins:
   packet::logger:
     enable: 1
     keep_for: 30 days
+
+  zone::discovery;
+    enable: 1

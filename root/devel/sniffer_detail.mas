@@ -1,0 +1,12 @@
+<%args>
+	$type
+</%args>
+<div>
+<h2>Details for <% $type %> stats</h2>
+% foreach my $period (qw(halfday day week month) ) {
+	<p>
+	<img src="<% $c->uri_for("/rrd/$period/sniffer/$type") %>" alt="<% $period %> graph"/>
+    </p>
+% }
+</div>
+<%method title>detailed statistics: sniffer <% $c->stash->{type} %></%method>

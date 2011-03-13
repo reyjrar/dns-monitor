@@ -9,6 +9,8 @@
 	<th>server</th>
 	<th>questions</th>
 	<th>answers</th>
+	<th>nx</th>
+	<th>errors</th>
   </tr>
 </thead>
 <tbody>
@@ -16,8 +18,10 @@
   <tr>
 	<td><span class="ss_sprite <% $ss->server->is_authorized ? 'ss_tick' : 'ss_cross' %>">&nbsp;</span></td>
 	<td><% $ss->server->ip %></td>
-	<td><% $ss->questions %></td>
+	<td><% $ss->queries %></td>
 	<td><% $ss->answers %></td>
+	<td><% $ss->nx %></td>
+	<td><% $ss->errors %></td>
   </tr>
 % }
 </tbody>

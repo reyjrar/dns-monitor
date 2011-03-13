@@ -68,7 +68,7 @@
 </div>
 
 <div id="sidebar" class="span-6 prepend-1 last">
-% if( exists $c->session->{debug} && $c->session->{debug} ) {
+% if( exists $c->session->{modes}{debug} && $c->session->{modes}{debug} ) {
 <& /devel/debug.mas &>
 % }
 </div>

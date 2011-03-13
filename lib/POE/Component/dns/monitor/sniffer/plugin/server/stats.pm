@@ -4,14 +4,14 @@ use strict;
 use warnings;
 use POE;
 use DateTime;
-use YAML;
+use Try::Tiny;
 
 sub spawn {
 	my $self = shift;
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad Model" unless ref $args{DBICSchema};
+	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -19,6 +19,7 @@ sub spawn {
 		_stop 	=> sub { },
 		server_stats_start => \&server_stats_start,
 		process => \&process,
+		post_updates => \&post_updates,
 	});
 
 	return $sess->ID;
@@ -31,32 +32,76 @@ sub server_stats_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{model} = $args->{DBICSchema};
+	$heap->{dbh} = $args->{DBH};
+	$heap->{interval} = exists $args->{Config}{interval} ? $args->{Config}{interval} : 300;
+	$heap->{updates} = {};
+
+	$kernel->delay_add( 'post_updates', $heap->{interval} );
+}
+
+sub post_updates {
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+	# Grab the updates:
+	my $updates = delete $heap->{updates};
+	$heap->{updates} = {};
+
+	# Statement Handle Caching
+	my %SQL = (
+		update => q{select server_stats_update( ?, ?, ?, ?, ? )},
+	);
+	my %STH = ();
+	foreach my $s (keys %SQL) {
+		$STH{$s} = $heap->{dbh}->run( fixup => sub {
+				my $sth = $_->prepare( $SQL{$s} );
+				$sth;
+			}, catch {
+				my $err = shift;
+				$kernel->post( $heap->{log} => notice => qq|server::stats STH: $s failed: $err| );
+			}
+		);
+	}
+
+	foreach my $id ( keys %{ $updates } ) {
+		my %info = %{ $updates->{$id} };
+
+		$STH{update}->execute( $id, @info{qw( queries answers nx errors )} );
+	}
+
+	$kernel->delay_add( 'post_updates', $heap->{interval} );
 }
 
 sub process {
 	my ( $kernel,$heap,$dnsp,$info ) = @_[KERNEL,HEAP,ARG0,ARG1];
+	
+	my $updates = $heap->{updates};
+	my $id = $info->{server_id};
 
-	my $dt = DateTime->now();
-	my $stats = $heap->{model}->resultset('server::stats')->find_or_create(
-		{
-			server_id	=> $info->{server_id},
-			day 		=> $dt->ymd,
-		}
-	);	
+	if( ! exists $updates->{$id} ) {
+		$updates->{$id} = {
+			queries => 0,
+			answers => 0,
+			nx		=> 0,
+			errors	=> 0,
+		};
+	}	
+
 	# Check for query/response
 	if( $dnsp->header->qr ) {
-		my $answers = $stats->answers || 0;
-		$stats->answers( $answers + 1 );
+		if ( $dnsp->header->rcode eq 'NOERROR' ) {
+			$updates->{$id}{answers}++;
+		}
+		elsif( $dnsp->header->rcode eq 'NXDOMAIN' ) {
+			$updates->{$id}{nx}++;
+		}
+		else {
+			$updates->{$id}{errors}++;
+		}
 	}
 	else {
-		my $questions = $stats->questions || 0;
-		$stats->questions( $questions + 1 );
+		$updates->{$id}{queries}++;
 	}
-	$stats->update;
 }
 
 # Return True
 1;
-
-

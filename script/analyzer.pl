@@ -9,9 +9,7 @@
 use strict;
 use warnings;
 use FindBin;
-
-# Add local lib path
-use lib "$FindBin::Bin/../lib";
+use DBIx::Connector;
 
 # File name processing
 use File::Spec;
@@ -19,7 +17,9 @@ use File::Basename;
 # Config Parsing
 use YAML;
 # POE Environment
+use lib "$FindBin::Bin/../lib";
 sub POE::Kernel::ASSERT_DEFAULT () { 1 } 
+sub POE::Kernel::TRACE_DEFAULT () { 0 } 
 use EV;
 use POE qw(
 	Loop::EV
@@ -27,9 +27,6 @@ use POE qw(
 	Component::Logger
 	Component::dns::monitor::analysis
 );
-
-# DBIx::Class
-use dns::monitor::Schema;
 
 #------------------------------------------------------------------------#
 # Locate all the necessary directories
@@ -50,7 +47,7 @@ my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
 my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
 
 # Connect to the Database:
-my $schema = dns::monitor::Schema->connect( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
+my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
 
 #------------------------------------------------------------------------#
 # POE Environment Setup
@@ -68,7 +65,7 @@ POE::Component::Logger->spawn(
 # Start Packet Capturing
 POE::Component::dns::monitor::analysis->spawn(
 	Config	=> $configFile,
-	DBICSchema => $schema,
+	DBH => $dbConn,
 	Plugins => $CFG->{plugins},
 );
 

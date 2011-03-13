@@ -13,12 +13,13 @@ sub new {
 
 	# Defaults
 	my %Config = (
-		Archives => [qw(
-			RRA:AVERAGE:0.5:1:576	
-			RRA:AVERAGE:0.5:8:576	
-			RRA:AVERAGE:0.5:32:576	
-			RRA:AVERAGE:0.5:372:576	
-		)],
+		# Assumes 60 second steps
+		Archives => [
+			q{RRA:AVERAGE:0.5:2:750},		# 25 Hours (every 2 minutes)
+			q{RRA:AVERAGE:0.5:15:768},		# 8 Days (every 15 minutes)
+			q{RRA:AVERAGE:0.5:60:768}, 		# 32 days (every hour)
+			q{RRA:AVERAGE:0.5:480:1116},	# 372 days (every 8 hours)
+		],
 		%opts
 	);
 	croak "Step required but invalid" unless defined $Config{Step} && $Config{Step} > 0;

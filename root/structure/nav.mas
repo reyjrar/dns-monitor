@@ -1,6 +1,7 @@
 <!-- Navigation -->
 <ul id="navigation" class="sf-menu">
 % foreach my $mi (@menuItems) {
+%   next if exists $mi->{mode} && !$c->session->{modes}{$mi->{mode}};
 	<li><a href="<% $c->uri_for( $mi->{url} ) %>"><% $mi->{title} %></a>
 %	if( ref $mi->{items} eq 'ARRAY' ) {
 	  <ul>
@@ -29,6 +30,15 @@ my @menuItems = (
 			{ title => 'server stats', url => '/server/stats' },
 			{ title => 'client stats', url => '/client/stats' },
 		],
+	},
+	{
+		title => 'development',
+		url	  => '/devel/',
+		items => [
+			{ title => 'sniffer', url => '/devel/sniffer' },
+			{ title => 'disable', url => '/devel/off' },
+		],
+		mode => 'devel',
 	},
 	{
 		title	=> 'logout',

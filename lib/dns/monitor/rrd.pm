@@ -24,10 +24,10 @@ use warnings;
 		},
 		Step => 60,
 		Archives => [qw(
-			RRA:AVERAGE:0.5:1:576	
-			RRA:AVERAGE:0.5:8:576	
-			RRA:AVERAGE:0.5:32:576	
-			RRA:AVERAGE:0.5:372:576	
+			RRA:AVERAGE:0.5:2:770	
+			RRA:AVERAGE:0.5:8:770	
+			RRA:AVERAGE:0.5:32:770	
+			RRA:AVERAGE:0.5:372:770	
 		)]
 	);
 

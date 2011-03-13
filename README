@@ -8,6 +8,11 @@ REQUIREMENTS (Non-Perl)
 	PostgreSQL (8.3 or later)
 	rrdtool (1.2 or later)
 
+	PostgreSQL Database
+	------------------
+	Make sure you add the PL/PgSQL Language to the database before running the install script
+
+
 AUTHOR
 	Brad Lhotsky <brad.lhotsky@gmail.com>
 	http://twitter.com/reyjrar
