@@ -51,7 +51,10 @@ my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
 my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
 
 # Connect to the Database:
-my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
+my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
+		# Add Fork Safety
+		{ AutoInactiveDestroy => 1 },
+);
 
 #------------------------------------------------------------------------#
 # POE Environment Setup

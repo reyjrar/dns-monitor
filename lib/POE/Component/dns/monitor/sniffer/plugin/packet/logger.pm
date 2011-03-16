@@ -22,8 +22,9 @@ sub spawn {
 		packet_logger_start => \&packet_logger_start,
 		process => \&process,
 		maintenance => \&packet_logger_maintenance,
-		packet_logger_query_response => \&packet_logger_query_response,
-		packet_logger_client_is_server => \&packet_logger_client_is_server,
+		child_stdout => \&handle_child_input,
+		child_stderr => \&handle_child_input,
+		child_close	=> \&handle_child_close,
 	});
 
 	return $sess->ID;
@@ -37,6 +38,13 @@ sub packet_logger_start {
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
 	$heap->{dbh} = $args->{DBH};
+
+	# Set the Config
+	my %cfg = (
+		keep_for => '30 days',
+		%{ $args->{Config} },
+	);
+	$heap->{config} = \%cfg;
 
 	# Caching
 	my %_qcache = ();
@@ -171,8 +179,46 @@ sub packet_logger_maintenance {
 	# Purge the Query Cache
 	$heap->{qcache}->purge();
 
+	# Cleanup the tables
+	$heap->{_mchild} = POE::Wheel::Run->new(
+		Program => \&expire_records,
+		ProgramArgs => [ $kernel, $heap ],
+		StdoutEvent => "child_stdout",
+		StderrEvent => "child_stderr",
+		CloseEvent	=> "child_close",
+	);
+	$kernel->sig_child($heap->{_mchild}->PID, "got_sigchld")
+
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
+}
+
+sub expire_records {
+	my ($kernel,$heap) = @_;
+
+	return 1 if $heap->{config}{keep_for} == 0;
+	
+	my $sth = $heap->{dbh}->run( fixup => sub {
+			my $sth = $_->prepare( q{select packet_logger_cleanup( ? )} );
+			$sth;
+	});
+
+	$sth->execute( $heap->{config}{keep_for} );
+	$sth->finish;
+
+	return 1;
+}
+
+# Output from maintenance child
+sub handle_child_input {
+	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
+}
+
+# Handle maintenance child close
+sub handle_child_close {
+	my ($kernel,$heap) @_;
+	$kernel->post( $heap->{log} => notice => "maintenance completed.");
+	delete $heap->{_mchild};
 }
 
 sub _get_rr_data {

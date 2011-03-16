@@ -61,10 +61,12 @@ sub analyze {
 	my %STH = ();
 	my %SQL = (
 		null_response => q{
-				select * from packet_query where response_id is null
-					and query_ts > ?
-					and id > ?
-					order by query_ts limit 5000
+				select q.* from packet_query q
+					left join packet_meta_query_responses m on q.id = m.query_id
+						where m.response_id is null
+						and q.query_ts > ?
+						and q.id > ?
+						order by q.query_ts limit 5000
 		},
 		find_response => q{
 			select id from packet_response
@@ -73,7 +75,7 @@ sub analyze {
 					and response_ts between ? and ?
 		},
 		set_response => q{
-			update packet_query set response_id = ? where id = ?
+			select link_query_response( ?, ? )
 		},
 	);
 	foreach my $s (keys %SQL) {
@@ -98,7 +100,7 @@ sub analyze {
 		# If we found 1, do something!
 		if( $STH{find_response}->rows == 1 ) {
 			my($response_id) = $STH{find_response}->fetchrow_array;
-			$STH{set_response}->execute( $response_id, $q->{id} );
+			$STH{set_response}->execute( $q->{id}, $response_id );
 			$updates++;
 		}
 		$id = $q->{id};

@@ -47,3 +47,16 @@ install:
         - zone_question
         - get_zone_id
         - zone_tree
+
+upgrade:
+  20110326:
+    plugins:
+      server::stats:
+        entities:
+          - server_stats_cleanup
+      client::stats:
+        entities:
+          - client_stats_cleanup
+      packet::logger:
+        entities:
+          - packet_logger_cleanup

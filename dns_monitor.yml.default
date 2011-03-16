@@ -39,6 +39,7 @@ pcap:
 plugins:
   client::stats:
     enable: 1
+    keep_for: 31 days
 
   client::local:
     enable: 1
@@ -49,6 +50,7 @@ plugins:
 
   server::stats:
     enable: 1
+    keep_for: 31 days
 
   server::authorized:
     enable: 1
@@ -61,7 +63,7 @@ plugins:
 
   packet::logger:
     enable: 1
-    keep_for: 30 days
+    keep_for: 8 days
 
   zone::discovery;
     enable: 1
