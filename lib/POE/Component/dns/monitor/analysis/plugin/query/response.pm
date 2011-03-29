@@ -62,7 +62,7 @@ sub analyze {
 	my %SQL = (
 		null_response => q{
 				select q.* from packet_query q
-					left join packet_meta_query_responses m on q.id = m.query_id
+					left join packet_meta_query_response m on q.id = m.query_id
 						where m.response_id is null
 						and q.query_ts > ?
 						and q.id > ?
