@@ -49,14 +49,17 @@ install:
         - zone_tree
 
 upgrade:
-  20110326:
+  20110316:
     plugins:
       server::stats:
+        level: 0
         entities:
           - server_stats_cleanup
       client::stats:
+        level: 0
         entities:
           - client_stats_cleanup
       packet::logger:
+        level: 1
         entities:
           - packet_logger_cleanup

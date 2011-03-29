@@ -2,7 +2,7 @@ package POE::Component::dns::monitor::sniffer::plugin::packet::logger;
 
 use strict;
 use warnings;
-use POE;
+use POE qw( Wheel::Run );
 use DateTime;
 use DateTime::Format::Pg;
 use YAML;
@@ -41,7 +41,7 @@ sub packet_logger_start {
 
 	# Set the Config
 	my %cfg = (
-		keep_for => '30 days',
+		keep_for => '8 days',
 		%{ $args->{Config} },
 	);
 	$heap->{config} = \%cfg;
@@ -187,7 +187,7 @@ sub packet_logger_maintenance {
 		StderrEvent => "child_stderr",
 		CloseEvent	=> "child_close",
 	);
-	$kernel->sig_child($heap->{_mchild}->PID, "got_sigchld")
+	$kernel->sig_child($heap->{_mchild}->PID, "child_close");
 
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
@@ -216,7 +216,7 @@ sub handle_child_input {
 
 # Handle maintenance child close
 sub handle_child_close {
-	my ($kernel,$heap) @_;
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
 	$kernel->post( $heap->{log} => notice => "maintenance completed.");
 	delete $heap->{_mchild};
 }
