@@ -2,8 +2,9 @@ ABOUT
 
 	dns-monitor is a project aimed at providing statistics on dns usage
 
-REQUIREMENTS (Non-Perl)
+REQUIREMENTS
 	
+	Perl (5.12 recommended)
 	libpcap (1.1.1 recommended)
 	PostgreSQL (8.3 or later)
 	rrdtool (1.2 or later)
@@ -40,6 +41,11 @@ INSTALL
 
 	# Point your web browser to
 	http://localhost:3000/   # See Stuff
+
+UPGRADE
+
+	# If you installed the first release, you'll need to apply the schema updates:
+	./devel/deploy_database_schema.pl upgrade 20110316
 
 CONFIGURATION
 
