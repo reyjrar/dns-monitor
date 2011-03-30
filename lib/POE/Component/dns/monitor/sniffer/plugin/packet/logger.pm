@@ -2,7 +2,7 @@ package POE::Component::dns::monitor::sniffer::plugin::packet::logger;
 
 use strict;
 use warnings;
-use POE qw( Wheel::Run );
+use POE;
 use DateTime;
 use DateTime::Format::Pg;
 use YAML;
