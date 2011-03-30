@@ -22,9 +22,7 @@ sub spawn {
 		packet_logger_start => \&packet_logger_start,
 		process => \&process,
 		maintenance => \&packet_logger_maintenance,
-		child_stdout => \&handle_child_input,
-		child_stderr => \&handle_child_input,
-		child_close	=> \&handle_child_close,
+		expire_records => \&expire_records,
 	});
 
 	return $sess->ID;
@@ -179,22 +177,15 @@ sub packet_logger_maintenance {
 	# Purge the Query Cache
 	$heap->{qcache}->purge();
 
-	# Cleanup the tables
-	$heap->{_mchild} = POE::Wheel::Run->new(
-		Program => \&expire_records,
-		ProgramArgs => [ $kernel, $heap ],
-		StdoutEvent => "child_stdout",
-		StderrEvent => "child_stderr",
-		CloseEvent	=> "child_close",
-	);
-	$kernel->sig_child($heap->{_mchild}->PID, "child_close");
+	# Age Records in query/response tables
+	$kernel->yield( 'expire_records' );
 
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
 }
 
 sub expire_records {
-	my ($kernel,$heap) = @_;
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
 
 	return 1 if $heap->{config}{keep_for} == 0;
 	
@@ -206,19 +197,9 @@ sub expire_records {
 	$sth->execute( $heap->{config}{keep_for} );
 	$sth->finish;
 
+	$kernel->call( $heap->{log} => notice => "expire_records completed.");
+
 	return 1;
-}
-
-# Output from maintenance child
-sub handle_child_input {
-	my ($kernel,$heap,$msg) = @_[KERNEL,HEAP,ARG0];
-}
-
-# Handle maintenance child close
-sub handle_child_close {
-	my ($kernel,$heap) = @_[KERNEL,HEAP];
-	$kernel->post( $heap->{log} => notice => "maintenance completed.");
-	delete $heap->{_mchild};
 }
 
 sub _get_rr_data {
