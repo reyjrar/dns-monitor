@@ -49,14 +49,14 @@ sub reset_id {
 	$kernel->delay_add( reset_id => 3600*12 );
 }
 
-# Discover Authorized and Unauthorized servers
+# Link Query and Response
 sub analyze {
 	my ( $kernel,$heap ) = @_[KERNEL,HEAP];
 
 	$kernel->call( $heap->{log} => debug => "query::reponse running analysis" );
 
 	# Select Null response_id
-	my $check_ts = DateTime->now()->subtract( days => 2 );
+	my $check_ts = DateTime->now()->subtract( hours => 12 );
 
 	my %STH = ();
 	my %SQL = (
@@ -66,7 +66,7 @@ sub analyze {
 						where m.response_id is null
 						and q.query_ts > ?
 						and q.id > ?
-						order by q.query_ts limit 5000
+						order by q.query_ts limit 2000
 		},
 		find_response => q{
 			select id from packet_response
@@ -113,9 +113,9 @@ sub analyze {
 	$kernel->delay_add( analyze => $heap->{interval} );
 }
 
-# Notification of Unauthorized Servers
+# Notification
 sub notify {
-	my ($kernel,$heap,$cli) = @_[KERNEL,HEAP,ARG0];
+	my ($kernel,$heap) = @_[KERNEL,HEAP];
 }
 
 # Return True

@@ -42,6 +42,9 @@ INSTALL
 	# Point your web browser to
 	http://localhost:3000/   # See Stuff
 
+	# Install the ./script/maintenance.pl into the server's crontab
+	#  once every 2 hours is more than enough
+
 UPGRADE
 
 	# If you installed the first release, you'll need to apply the schema updates:
