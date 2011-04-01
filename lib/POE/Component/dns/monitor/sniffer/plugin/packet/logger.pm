@@ -2,7 +2,7 @@ package POE::Component::dns::monitor::sniffer::plugin::packet::logger;
 
 use strict;
 use warnings;
-use POE qw( Wheel::Run );
+use POE;
 use DateTime;
 use DateTime::Format::Pg;
 use YAML;
@@ -22,7 +22,6 @@ sub spawn {
 		packet_logger_start => \&packet_logger_start,
 		process => \&process,
 		maintenance => \&packet_logger_maintenance,
-		expire_records => \&expire_records,
 	});
 
 	return $sess->ID;
@@ -39,7 +38,6 @@ sub packet_logger_start {
 
 	# Set the Config
 	my %cfg = (
-		keep_for => '8 days',
 		%{ $args->{Config} },
 	);
 	$heap->{config} = \%cfg;
@@ -177,29 +175,8 @@ sub packet_logger_maintenance {
 	# Purge the Query Cache
 	$heap->{qcache}->purge();
 
-	# Age Records in query/response tables
-	$kernel->yield( 'expire_records' );
-
 	# Reschedule
 	$kernel->delay_add( 'maintenance', 600 );
-}
-
-sub expire_records {
-	my ($kernel,$heap) = @_[KERNEL,HEAP];
-
-	return 1 if $heap->{config}{keep_for} == 0;
-	
-	my $sth = $heap->{dbh}->run( fixup => sub {
-			my $sth = $_->prepare( q{select packet_logger_cleanup( ? )} );
-			$sth;
-	});
-
-	$sth->execute( $heap->{config}{keep_for} );
-	$sth->finish;
-
-	$kernel->call( $heap->{log} => notice => "expire_records completed.");
-
-	return 1;
 }
 
 sub _get_rr_data {
