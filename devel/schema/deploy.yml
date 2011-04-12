@@ -63,3 +63,10 @@ upgrade:
         level: 1
         entities:
           - packet_logger_cleanup
+  20110412:
+    plugins:
+      packet::logger:
+        level: 1
+        entities:
+          - packet_logger_cleanup
+          - packet_meta_query_response
