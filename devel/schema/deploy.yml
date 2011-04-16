@@ -70,3 +70,14 @@ upgrade:
         entities:
           - packet_logger_cleanup
           - packet_meta_query_response
+
+  20110414:
+    plugins:
+      packet::logger:
+        level: 1
+        entities:
+          - packet_response
+      zone::discovery:
+        level: 1
+        entities:
+          - zone_answer
