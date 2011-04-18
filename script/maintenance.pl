@@ -4,11 +4,12 @@
 #
 # Code by Brad Lhotsky <brad@divisionbyzero.net>
 #
-
+$|++;
 use strict;
 use warnings;
 use FindBin;
-use DBIx::Connector;
+use DBI;
+use DBD::Pg qw(:async);
 use Try::Tiny;
 use Getopt::Std;
 
@@ -41,7 +42,7 @@ my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
 my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
 
 # Connect to the Database:
-my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
+my $dbh = DBI->connect( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
 
 # Find all the plugins with keep_for set
 foreach my $plugin (sort keys %{ $CFG->{plugins} } ) {
@@ -66,16 +67,18 @@ foreach my $plugin (sort keys %{ $CFG->{plugins} } ) {
 	# Prepare the Clean Up
 	my $sql = qq{ select ${prefix}_cleanup( ? ) };
 	print "preparing '$sql' with arg '$keep_for' .." unless $OPT{q};
-	my $sth = $dbConn->run( fixup => sub {
-			my $sth = $_->prepare( $sql );
-			$sth;
-	});
+	my $sth = $dbh->prepare( $sql, {pg_async => PG_ASYNC} );
 
 	try { 
 		$sth->execute( $keep_for );
 	} catch {
 		print "error cleaning up: ($_)" unless $OPT{q};
 	};
+
+	while ( ! $sth->pg_ready() ) {
+		sleep 2;
+		print '.';
+	}
 
 	print " done.\n" unless $OPT{q};
 }
