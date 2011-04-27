@@ -77,7 +77,7 @@ foreach my $plugin (sort keys %{ $CFG->{plugins} } ) {
 
 	while ( ! $sth->pg_ready() ) {
 		sleep 2;
-		print '.';
+		print '.' unless $OPT{q};
 	}
 
 	print " done.\n" unless $OPT{q};
