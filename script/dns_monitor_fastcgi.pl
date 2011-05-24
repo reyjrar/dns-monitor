@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/local/bin/perl
 
 use Catalyst::ScriptRunner;
 Catalyst::ScriptRunner->run('dns::monitor', 'FastCGI');

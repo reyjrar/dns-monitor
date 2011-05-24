@@ -43,6 +43,7 @@ my @menuItems = (
 		url		=> '/utility',
 		items	=> [
 			{ title => 'fake reverse', url => '/utility/reverse' },
+			{ title => 'query page (beta)', url => '/query/' },
 		],
 	},
 );
