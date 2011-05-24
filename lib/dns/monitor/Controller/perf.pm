@@ -1,4 +1,4 @@
-package dns::monitor::Controller::devel;
+package dns::monitor::Controller::perf;
 use Moose;
 use namespace::autoclean;
 use File::Spec;
@@ -8,7 +8,7 @@ BEGIN {extends 'Catalyst::Controller'; }
 
 =head1 NAME
 
-dns::monitor::Controller::devel - Catalyst Controller
+dns::monitor::Controller::perf - Catalyst Controller
 
 =head1 DESCRIPTION
 
@@ -26,7 +26,7 @@ Catalyst Controller.
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-	$c->stash->{template} = '/devel/index.mas';
+	$c->stash->{template} = '/perf/index.mas';
 }
 
 sub sniffer :Path('sniffer') :Args(0) {
@@ -45,7 +45,7 @@ sub sniffer :Path('sniffer') :Args(0) {
 		push @plugins, $name;
 	}
 	$c->stash->{plugins} = \@plugins;
-	$c->stash->{template} = '/devel/sniffer.mas';
+	$c->stash->{template} = '/perf/sniffer.mas';
 }
 
 sub sniffer_detail :Path('sniffer/details') :Args(1) {
@@ -55,7 +55,7 @@ sub sniffer_detail :Path('sniffer/details') :Args(1) {
 	die "invalid sniffer detail type ($type)" unless $type ~~ @types;
 
 	$c->stash->{type} = $type;
-	$c->stash->{template} = '/devel/sniffer_detail.mas';
+	$c->stash->{template} = '/perf/sniffer_detail.mas';
 }
 
 =head1 AUTHOR

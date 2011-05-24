@@ -5,7 +5,7 @@
 <h2>Preprocessing</h2>
 % foreach my $type (qw(dispatch network dns) ) {
 	<p>
-		<a href="<% $c->uri_for("/devel/sniffer/details/$type") %>" alt="<% $type %> details">
+		<a href="<% $c->uri_for("/perf/sniffer/details/$type") %>" alt="<% $type %> details">
 		<img src="<% $c->uri_for("/rrd/halfday/sniffer/$type") %>" alt="<% $type %> graph"/>
 		</a>
 	</p>
