@@ -1,0 +1,49 @@
+<div id="search" class="span-10 ui-helper ui-state-default hide" title="search">
+	<form action="/search" METHOD="POST">
+		<div class="center span-9 last">
+			<select name="search_type" id="search_type" class="span-7 last">
+				<option value="clients-asking">clients asking</option>
+				<option value="query-asked">query asked</option>
+			</select>
+		</div>
+
+		<div class="center span-9 last">
+			<input type="text" class="span-7 last" name="search_value" id="search_value"/>
+		</div>
+
+		<div class="center span-9 last">
+			<input type="submit" class="span-5 last" value="find"/>
+		</div>
+	</form>
+</div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+
+	$('.searchable-clients-asking').bind('click', function() {
+		var value = $(this).text();
+
+		showSearch( 'clients-asking', value );
+	});
+});
+
+function showSearch( searchType, searchValue ) {
+	var doFocus = false;
+	if( searchType ) {
+		$('#search_type').val( searchType );
+	}
+	if( searchValue ) {
+		$('#search_value').val( searchValue );
+	}
+	else {
+		doFocus = true;
+	}
+
+	// Show the Search Box
+	$('#search').dialog({ width: '400px' });
+
+	if( doFocus ) {
+		$('#search_value').focus();
+	}
+}
+</script>

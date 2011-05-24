@@ -36,9 +36,6 @@
 
 </div>
 
-<div id="nav" class="span-24 last">
-</div>
-
 <hr class="space"/>
 
 % if(  defined $c->flash->{errors} && ref $c->flash->{errors} eq 'ARRAY' ) {
@@ -72,6 +69,8 @@
 <& /devel/debug.mas &>
 % }
 </div>
+
+<& /structure/search.mas &>
 
 <div id="footer" class="span-24 last">
 </div>
