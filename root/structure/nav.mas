@@ -32,19 +32,20 @@ my @menuItems = (
 		],
 	},
 	{
-		title => 'development',
-		url	  => '/devel/',
+		title => 'performance',
+		url	  => '/perf/',
 		items => [
-			{ title => 'sniffer', url => '/devel/sniffer' },
-			{ title => 'disable', url => '/devel/off' },
+			{ title => 'sniffer', url => '/perf/sniffer' },
 		],
-		mode => 'devel',
 	},
 	{
-		title	=> 'logout',
-		url		=> '/logout',
-		items	=> undef,
+		title	=> 'utilities',
+		url		=> '/utility',
+		items	=> [
+			{ title => 'fake reverse', url => '/utility/reverse' },
+		],
 	},
 );
+
 </%init>
 
