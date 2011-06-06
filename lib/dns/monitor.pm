@@ -16,6 +16,10 @@ use Catalyst qw/
     ConfigLoader
     Static::Simple
 	StackTrace
+	
+	Session
+	Session::Store::FastMmap
+	Session::State::Cookie
 /;
 
 extends 'Catalyst';
@@ -36,6 +40,8 @@ __PACKAGE__->config(
     name => 'dns::monitor',
     # Disable deprecated behavior needed by old applications
     disable_component_resolution_regex_fallback => 1,
+	default_view => 'Mason',
+	time_zone => 'America/New_York',
 );
 
 # Start the application

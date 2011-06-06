@@ -1,0 +1,68 @@
+<%args>
+	$ip => undef,
+	$forwards => undef
+</%args>
+<%method title>fake reverses</%method>
+<form name="lookup_form" id="lookup_form" action="<% $c->uri_for('/utility/reverse') %>"  method="POST">
+<div class="span-17 last">
+	<span class="prepend-2 span-4 large">enter an ip :</span>
+	<input type="text" name="ip" id="ip" class="span-7"/>
+	<input type="submit" id="lookup" name="lookup" class="button span-3 last" value="lookup"/>
+</div>
+</form>
+<script type="text/javascript">
+$('#lookup').bind('click', function () {
+	var ip = $('#ip').val();
+	var ipregex = /^(\d{1,3}\.){3}\d{1,3}/;
+
+	if( ip.search(ipregex) == -1 ) {
+		alert("please enter a valid ip address");
+		$('#ip').focus;
+		return 0;
+	}
+	else {
+		return 1;
+	}
+});
+</script>
+
+% if( defined $ip ) { 
+<h2>Forward Queries for '<% $ip %>' :</h2>
+% if( defined $forwards ) {
+<table class="display" id="forwardsTable">
+<thead>
+	<tr>
+		<th>class</th>
+		<th>type</th>
+		<th>name</th>
+		<th>value</th>
+		<th>first</th>
+		<th>last</th>
+		<th>references</th>
+	</tr>
+</thead>
+<tbody>
+%	while( my $rec = $forwards->next ) {
+	<tr>
+		<td><% $rec->class %></td>
+		<td><% $rec->type %></td>
+		<td><% $rec->name %></td>
+		<td><% $rec->value %></td>
+		<td><% $rec->first_ts->ymd %></td>
+		<td><% $rec->last_ts->ymd %></td>
+		<td><% $rec->reference_count %></td>
+	</tr>
+%	}
+</tbody>
+</table>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#forwardsTable').dataTable({
+		'bJQueryUI': true,
+		'iDisplayLength': 10,
+		'aaSorting': [ [ 6, 'desc' ] ]
+	});
+});
+</script>
+% } # end if forwards
+% } # end if ip

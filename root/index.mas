@@ -1,3 +1,13 @@
-<h2>Non-Functional</h2>
+<h2>in process</h2>
 
-<p>The interface will be included in the next release.</p>
+<p>dns::monitor will be adding graphs, statistics, searches, and anomaly detection.</p>
+
+<h3>recently added features</h3>
+<ul>
+  <li>added 'fake reverse' utility which gets reverse data from forwards</li>
+  <li>moved devel::sniffer to perf::sniffer</li>
+  <li>devel::sniffer statistics tracking</li>
+  <li>RRDTool integration</li>
+</ul>
+
+

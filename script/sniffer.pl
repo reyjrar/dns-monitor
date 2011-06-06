@@ -17,10 +17,10 @@ use lib "$FindBin::Bin/../lib";
 use File::Spec;
 use File::Basename;
 # Config Parsing
-use YAML::Syck;
-$YAML::Syck::ImplicitTyping = 1;
+use YAML;
+use DBIx::Connector;
 # POE Environment
-sub POE::Kernel::ASSERT_DEFAULT () { 1 }
+sub POE::Kernel::ASSERT_DEFAULT () { 1 } 
 use EV;
 use POE qw(
 	Loop::EV
@@ -29,8 +29,8 @@ use POE qw(
 	Component::dns::monitor::sniffer
 );
 
-# DBIx::Class
-use dns::monitor::Schema;
+# Handle interrupts gracefully
+$SIG{INT} = sub { exit };
 
 #------------------------------------------------------------------------#
 # Locate all the necessary directories
@@ -48,10 +48,11 @@ my %DIRS = (
 #------------------------------------------------------------------------#
 # Load Configuration
 my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
-my $CFG = LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
+my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
 
 # Connect to the Database:
-my $schema = dns::monitor::Schema->connect( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
+my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
+	{ RaiseError => 0 } );
 
 #------------------------------------------------------------------------#
 # POE Environment Setup
@@ -69,9 +70,10 @@ POE::Component::Logger->spawn(
 # Start Packet Capturing
 POE::Component::dns::monitor::sniffer->spawn(
 	Config	=> $configFile,
-	DBICSchema => $schema,
+	DBH => $dbConn,
 	Plugins => $CFG->{plugins},
 	PcapOpts => $CFG->{pcap},
+	RRDOpts => $CFG->{rrd},
 );
 
 #------------------------------------------------------------------------#

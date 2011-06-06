@@ -1,37 +1,29 @@
-/* floats */
+/* Classes */
 .float-left {
 	float: left;
 }
 .right {
 	text-align: right;
 }
+.float-right, .css_right {
+	float: right;
+}
+.center {
+	text-align: center;
+}
+.strike {
+	text-decoration: line-through;
+}
+a.fg-button {
+	float: left;
+}
+.fg-toolbar {
+	padding: 3px;
+}
+.indent {
+	text-indent: 15px;
+}
 /* Element Formatting */
-table {
-	border: 1px solid #aeaeae;
-	border-collapse: collapse;
-	empty-cells: show;
-	clear: both;
-	margin: 0.2em;
-}
-thead tr th {
-	background-color: #303030;
-	color: #e0e0e0;
-	font-weight: normal;
-	margin: 10px;
-}
-tbody tr td,tbody tr.even td {
-	white-space: nowrap;
-	padding: 0.2em;
-	color: #303030;	
-}
-tbody tr.odd td {
-	background-color: #e5ddc4;
-	color: #000;
-}
-tbody tr.even:hover td, tbody tr.odd:hover td {
-	background-color: #DDAD90;
-}
-
 fieldset {
 	margin: 5px 0 0 0;
 	padding-top: 0.5em;
@@ -70,48 +62,49 @@ ul.condensed li {
 }
 /**************************************************************************/
 /* Color Rules */
-tr.green td {
+tr.green td, .green {
 	background-color: #9f9;
 }
-tr.red td {
+tr.red td, .red {
 	background-color: #fcc;
 }
-tr.blue td {
+tr.blue td, .blue {
 	background-color: #9cf;
 }
-tr.orange td {
+tr.orange td, .orange {
 	background-color: #ffAf7f;
 }
-tr.yellow td {
+tr.yellow td, .yellow {
 	background-color: #fc9;
 }
-tr.gray td {
+tr.gray td, .gray {
 	background-color: #ddd;
 }
 /**************************************************************************/
 /* Utility Rules */
-.eris-button-green {
+.dm-button-green {
 	background-color: #afa;
 	border: 1px solid #090;
 	color: #090;
 	padding-left: 3px;
 	padding-right: 3px;
 }
-.eris-button-gray-strike {
+.dm-button-gray {
 	background-color: #e0e0e0;
-	border: 1px solid #ccc;
 	color: #666;
+	border: 1px solid #ccc;
 	padding-left: 3px;
 	padding-right: 3px;
-	text-decoration: line-through;
 }
-
-.happy {
-	background-color: #afa;
-	border: 1px solid #090;
-	color: #090;
+.dm-button-red {
+	background-color: #FEF1EC;
+	border: 1px solid #CD0A0A;
+	color: #CD0A0A;
 	padding-left: 3px;
 	padding-right: 3px;
+}
+.dm-box {
+	border: 1px solid #ccc;
 }
 .sys {
 	font-family: fixed;
@@ -126,5 +119,8 @@ tr.gray td {
 	padding: 2px;
 	margin-top: 3px;
 	margin-bottom: 3px;
+}
+.nav {
+	background-color: #BDD2FF;
 }
 /**************************************************************************/
