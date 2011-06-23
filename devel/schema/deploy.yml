@@ -81,3 +81,13 @@ upgrade:
         level: 1
         entities:
           - zone_answer
+
+  20110615:
+    base:
+      - ltree
+
+    plugins:
+      zone::discovery:
+        level: 0
+        entities:
+          - zone
