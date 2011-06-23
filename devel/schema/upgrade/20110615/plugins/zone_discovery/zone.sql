@@ -16,7 +16,7 @@ SELECT setval('zone_id_seq', 1, true);
 ALTER TABLE zone drop column parent_id;
 
 -- Add new columns
-ALTER TABLE zone add column path ltree;
+ALTER TABLE zone add column path ltree NOT NULL;
 ALTER TABLE zone add column reference_count BIGINT DEFAULT 0;
 ALTER TABLE zone add column first_ts TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW();
 ALTER TABLE zone add column last_ts TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW();

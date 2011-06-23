@@ -92,3 +92,5 @@ upgrade:
         entities:
           - zone
           - get_zone_id
+          - link_zone_question
+          - link_zone_answer
