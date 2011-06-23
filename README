@@ -4,7 +4,7 @@ ABOUT
 
 REQUIREMENTS
 	
-	Perl (5.12 recommended)
+	Perl (5.10.1 or later)
 	libpcap (1.1.1 recommended)
 	PostgreSQL (8.3 or later)
 	rrdtool (1.2 or later)
