@@ -4,6 +4,7 @@
 			<select name="search_type" id="search_type" class="span-7 last">
 				<option value="clients-asking">clients asking</option>
 				<option value="query-asked">query asked</option>
+				<option value="zone-tree">zone tree</option>
 			</select>
 		</div>
 
@@ -28,22 +29,15 @@ $(document).ready(function() {
 });
 
 function showSearch( searchType, searchValue ) {
-	var doFocus = false;
+	$('#search_value').val( searchValue );
+
 	if( searchType ) {
 		$('#search_type').val( searchType );
-	}
-	if( searchValue ) {
-		$('#search_value').val( searchValue );
-	}
-	else {
-		doFocus = true;
 	}
 
 	// Show the Search Box
 	$('#search').dialog({ width: '400px' });
 
-	if( doFocus ) {
-		$('#search_value').focus();
-	}
+	$('#search_value').focus();
 }
 </script>
