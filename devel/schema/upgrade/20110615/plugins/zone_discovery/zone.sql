@@ -7,7 +7,7 @@ DROP FUNCTION zone_tree(bigint,boolean);
 -- Delete the Data from the tables
 TRUNCATE zone_question;
 TRUNCATE zone_answer;
-TRUNCATE zone;
+TRUNCATE zone CASCADE;
 
 -- Reset the Sequence ID
 SELECT setval('zone_id_seq', 1, true);
