@@ -12,10 +12,10 @@
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/blueprint/plugins/sprites/sprite.css') %>"/>
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/superfish.css') %>"/>
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/jquery.dataTables.css') %>"/>
-	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/ui-themes/smoothness/jquery.ui.css') %>"/>
+	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/smoothness/jquery.ui.css') %>"/>
 
 	<!-- jQuery UI -->
-	<script type="text/javascript" src="<% $c->uri_for('/static/ui/jquery.ui.js') %>"></script>
+	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.ui.js') %>"></script>
 
 	<!-- jQuery Plugins -->
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.hoverIntent.min.js') %>"></script>
