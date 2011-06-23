@@ -113,11 +113,18 @@ sub process {
 			$heap->{sth}{query_response}->execute($query_id, $response_id);
 		}
 
-		my @sets = (
-			{ name => 'answer', rr => [ $dnsp->answer ], },
-			{ name => 'additional', rr => [ $dnsp->additional ], },
-			{ name => 'authority', rr => [ $dnsp->authority ], },
-		);
+		my @sets = ();
+		
+		foreach my $section (qw(answer additional authority)) {
+			my @records = ();
+			try {
+				no strict;
+				@records = $dnsp->$section();
+			};
+			if( @records ) {
+				push @sets, { name => $section, rr => \@records };
+			}
+		}
 		foreach my $set ( @sets ) {
 			foreach my $pa ( @{ $set->{rr} } ) {
 				my %data = _get_rr_data( $pa );

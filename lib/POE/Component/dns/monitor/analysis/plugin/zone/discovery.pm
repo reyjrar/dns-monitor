@@ -93,6 +93,7 @@ sub zone_questions {
 		}
 		my @path = split( /\./, $zone );
 		my $path = join('.', reverse @path);
+		$path =~ s/\-/_/g;
 		$STH{zone_id}->execute( $zone, $path, $q->{first_ts}, $q->{last_ts} );
 		my ($zone_id) = $STH{zone_id}->fetchrow_array;
 		next unless defined $zone_id and $zone_id > 0;
@@ -134,13 +135,14 @@ sub zone_answers {
 	while( my $q = $STH{check}->fetchrow_hashref ) {
 		foreach my $field ( qw( name value ) ) {
 			next if $q->{$field} =~ /(\d{1,3}\.){3}\d{1,3}/;
-			my ($name,$zone) = split( /\./, $q->{$field}, 2 );
-			if (! defined $zone ) {
+			my ($name,$zone) = map { lc } split( /\./, $q->{$field}, 2 );
+			if (! defined $zone || ! length $zone ) {
 				$kernel->call($heap->{log} => debug =>  "error parsing zone for $q->{id} $q->{class} $q->{type} $q->{name}");
 				next;
 			}
 			my @path = split( /\./, $zone );
 			my $path = join('.', reverse @path );
+			$path =~ s/\-/_/g;
 			$STH{zone_id}->execute( $zone, $path, $q->{first_ts}, $q->{last_ts} );
 			my ($zone_id) = $STH{zone_id}->fetchrow_array;
 			next unless defined $zone_id and $zone_id > 0;
