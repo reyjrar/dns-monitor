@@ -1,0 +1,21 @@
+<%args>
+	$query
+	$results = undef
+</%args>
+
+<h2>search for '<% $query %>'</h2>
+
+<table>
+<thead>
+  <tr>
+	<th>client</th>
+	<th>first</th>
+	<th>last</th>
+	<th>count</th>
+  </tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+<%method title>search results : clients asking</%method>

@@ -46,7 +46,7 @@ $('#lookup').bind('click', function () {
 	<tr>
 		<td><% $rec->class %></td>
 		<td><% $rec->type %></td>
-		<td><% $rec->name %></td>
+		<td><span class="searchable searchable-clients-asking"><% $rec->name %></span></td>
 		<td><% $rec->value %></td>
 		<td><% $rec->first_ts->ymd %></td>
 		<td><% $rec->last_ts->ymd %></td>

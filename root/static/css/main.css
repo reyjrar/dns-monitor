@@ -23,6 +23,9 @@ a.fg-button {
 .indent {
 	text-indent: 15px;
 }
+.searchable {
+	cursor: help;
+}
 /* Element Formatting */
 fieldset {
 	margin: 5px 0 0 0;

@@ -15,7 +15,7 @@
 <tbody>
 % while( my $q = $new_rs->next ) {
   <tr>
-	<td><% $q->class %> <% $q->type %> <% $q->name %></td>
+	<td><span class="searchable searchable-clients-asking"><% $q->class %> <% $q->type %> <% $q->name %></span></td>
 	<td><% $q->first_ts %></td>
 	<td><% $q->reference_count %></td>
   </tr>
@@ -36,7 +36,7 @@
 <tbody>
 % while( my $q = $most_asked_rs->next ) {
   <tr>
-	<td><% $q->class %> <% $q->type %> <% $q->name %></td>
+	<td><span class="searchable searchable-clients-asking"><% $q->class %> <% $q->type %> <% $q->name %></span></td>
 	<td><% $q->first_ts %></td>
 	<td><% $q->reference_count %></td>
   </tr>

@@ -2,11 +2,13 @@
 <ul id="navigation" class="sf-menu">
 % foreach my $mi (@menuItems) {
 %   next if exists $mi->{mode} && !$c->session->{modes}{$mi->{mode}};
-	<li><a href="<% $c->uri_for( $mi->{url} ) %>"><% $mi->{title} %></a>
+%	my $url = ref $mi->{url} ? ${ $mi->{url} } : $c->uri_for( $mi->{url} );
+	<li><a href="<% $url %>"><% $mi->{title} %></a>
 %	if( ref $mi->{items} eq 'ARRAY' ) {
 	  <ul>
 %	foreach my $si (@{ $mi->{items} }) {
-		<li><a href="<% $c->uri_for( $si->{url} ) %>"><% $si->{title} %></a></li>
+%		my $sub_url = ref $si->{url} ? ${ $si->{url} } : $c->uri_for( $si->{url} );
+		<li><a href="<% $sub_url %>"><% $si->{title} %></a></li>
 % 	} # End of sub items;
 	</ul>
 %	} # end if sub items
@@ -44,6 +46,7 @@ my @menuItems = (
 		items	=> [
 			{ title => 'fake reverse', url => '/utility/reverse' },
 			{ title => 'query page (beta)', url => '/query/' },
+			{ title => 'search', url => \q{javascript:showSearch('query-asked',null);}, },
 		],
 	},
 );
