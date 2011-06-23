@@ -91,3 +91,4 @@ upgrade:
         level: 0
         entities:
           - zone
+          - get_zone_id
