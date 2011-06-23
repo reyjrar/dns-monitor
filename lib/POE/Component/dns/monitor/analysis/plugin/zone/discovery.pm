@@ -68,7 +68,7 @@ sub zone_questions {
 					and q.type in ( 'A', 'AAAA', 'PTR', 'MX', 'SOA', 'NS' )
 					and z.question_id is null
 		},
-		zone_id => q{select get_zone_id( ? )},
+		zone_id => q{select get_zone_id( ?, ? )},
 		link_zone_question => q{
 			insert into zone_question ( zone_id, question_id ) values ( ?, ? )
 		},
@@ -90,7 +90,8 @@ sub zone_questions {
 			$kernel->call($heap->{log} => debug =>  "error parsing zone for $q->{id} $q->{class} $q->{type} $q->{name}");
 			next;
 		}
-		$STH{zone_id}->execute( $zone );
+		my $path = join('.', reverse split('.', $zone );
+		$STH{zone_id}->execute( $zone, $path );
 		my ($zone_id) = $STH{zone_id}->fetchrow_array;
 		next unless defined $zone_id and $zone_id > 0;
 		$STH{link_zone_question}->execute( $zone_id, $q->{id} );
@@ -111,7 +112,7 @@ sub zone_answers {
 					and a.type in ( 'A', 'AAAA', 'PTR', 'MX', 'SOA', 'NS' )
 					and z.answer_id is null
 		},
-		zone_id => q{select get_zone_id( ? )},
+		zone_id => q{select get_zone_id( ?, ? )},
 		link_zone_answer => q{
 			insert into zone_answer ( zone_id, answer_id ) values ( ?, ? )
 		},
@@ -135,7 +136,8 @@ sub zone_answers {
 				$kernel->call($heap->{log} => debug =>  "error parsing zone for $q->{id} $q->{class} $q->{type} $q->{name}");
 				next;
 			}
-			$STH{zone_id}->execute( $zone );
+			my $path = join('.', reverse split('.', $zone );
+			$STH{zone_id}->execute( $zone, $path );
 			my ($zone_id) = $STH{zone_id}->fetchrow_array;
 			next unless defined $zone_id and $zone_id > 0;
 			$STH{link_zone_answer}->execute( $zone_id, $q->{id} );
