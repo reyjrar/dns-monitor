@@ -16,7 +16,6 @@ use NetPacket::TCP;
 use Net::DNS::Packet;
 # Handle Loading Plugins
 use Module::Pluggable require => 1, search_path => [ 'POE::Component::dns::monitor::sniffer::plugin' ];
-use YAML;
 use Try::Tiny;
 
 # POE
