@@ -259,6 +259,7 @@ sub sniffer_handle_packets {
 				src_port => $udp->{src_port},
 				dest_ip => $ip_pkt->{dest_ip},
 				dest_port => $udp->{dest_port},
+				'time' => join('.', $header->{tv_sec}, sprintf("%0.6d", $hdr->{tv_usec}) ),
 			);
 			increment_stat( $heap, 'udp' );
 			$kernel->yield( dns_parse => $udp, \%ip );
@@ -271,6 +272,7 @@ sub sniffer_handle_packets {
 				src_port => $tcp->{src_port},
 				dest_ip => $ip_pkt->{dest_ip},
 				dest_port => $tcp->{dest_port},
+				'time' => join('.', $header->{tv_sec}, sprintf("%0.6d", $hdr->{tv_usec}) ),
 			);
 			increment_stat( $heap, 'tcp' );
 			$kernel->yield( dns_parse => $tcp, \%ip );
