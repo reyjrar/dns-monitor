@@ -65,5 +65,8 @@ plugins:
     enable: 1
     keep_for: 8 days
 
+  packet::timing:
+    enable: 1
+
   zone::discovery;
     enable: 1

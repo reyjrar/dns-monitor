@@ -78,8 +78,6 @@ sub process {
 	# Packet ID
 	my $packet_id = join(';', $info->{conversation_id}, $dnsp->header->id );
 
-	print YAML::Dump( $info );
-
 	# Check for query/response
 	if( $dnsp->header->qr ) {
 		# Grab Queriy id from cache:
