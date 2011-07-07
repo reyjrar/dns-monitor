@@ -49,11 +49,11 @@ sub packet_logger_start {
 
 	# Statement Handle Caching
 	my %SQL = (
-		query => q{select add_query( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )},
+		query => q{select add_query( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )},
 		question => q{select find_or_create_question( ?, ?, ?, ? ) },
 		response => q{select add_response( ?, ?, ?, ?, ?, ?, ?,
 											?, ?, ?, ?, ?, ?, ?,
-											?, ?, ?, ?, ? )},
+											?, ?, ?, ?, ?, ? )},
 		answer => q{select find_or_create_answer( ?, ?, ?, ?, ?, ?, ?, ? )},
 		query_response => q{select link_query_response( ?, ? )},
 	);
@@ -77,6 +77,8 @@ sub process {
 
 	# Packet ID
 	my $packet_id = join(';', $info->{conversation_id}, $dnsp->header->id );
+
+	print YAML::Dump( $info );
 
 	# Check for query/response
 	if( $dnsp->header->qr ) {
@@ -103,6 +105,7 @@ sub process {
 			$dnsp->header->cd,
 			$dnsp->header->rd,
 			$dnsp->header->ra,
+			$info->{time},
 		);
 
 		my ($response_id) = $heap->{sth}{response}->fetchrow_array;
@@ -157,7 +160,8 @@ sub process {
 			$dnsp->header->qdcount,
 			$dnsp->header->rd,
 			$dnsp->header->tc,
-			$dnsp->header->cd
+			$dnsp->header->cd,
+			$info->{time},
 		);
 
 		my ($query_id) = $heap->{sth}{query}->fetchrow_array;

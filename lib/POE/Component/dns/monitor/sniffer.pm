@@ -306,7 +306,7 @@ sub sniffer_dns_parse {
 	my $qa = $dnsp->header->qr ? 'answer' : 'question';
 	increment_stat( $heap, $qa );
 
-	my %info = ();
+	my %info = ( 'time' => $ip->{time} );
 	if( $qa eq 'answer' ) {
 		$info{server} = $ip->{src_ip};
 		$info{server_port} = $ip->{src_port};

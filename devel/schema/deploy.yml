@@ -101,6 +101,8 @@ upgrade:
         entities:
           - packet_query
           - packet_response
+          - add_query
+          - add_response
 
       packet::timing:
         level: 1
