@@ -43,16 +43,16 @@ sub analyze {
 	$kernel->call( $heap->{log} => debug => "packet::timing running analysis" );
 
 	my %SQL = (
-		check => q{select qr.query_id, q.conversation_id, qr.response_id, r.capture_time - q.capture_time as difference
-						from packet_meta_query_response qr
-							left join packet_timing t on qr.query_id = t.query_id and t.query_id is null
-							inner join packet_query q on qr.query_id = q.id and q.capture_time is not null
+		check => q{select
+					 q.id as query_id, q.conversation_id, qr.response_id, r.capture_time - q.capture_time as difference
+						from packet_query q
+							inner join packet_meta_query_response qr on q.id = qr.query_id
+							left join packet_timing t on q.id = t.query_id and t.query_id is null
 							inner join packet_response r on qr.response_id = r.id and r.capture_time is not null
+						where q.capture_time is not null
 		},
-		insert => q{insert into packet_timing 
-					( conversation_id, query_id, response_id, difference )
-					values
-					( ?, ?, ?, ? ) 
+		insert => q{insert into packet_timing ( conversation_id, query_id, response_id, difference )
+						values ( ?, ?, ?, ? ) 
 		},
 	);
 	my %STH = ();

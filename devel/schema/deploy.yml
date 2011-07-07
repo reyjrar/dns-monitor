@@ -108,3 +108,16 @@ upgrade:
         level: 1
         entities:
           - packet_timing
+
+  20110707:
+    plugins:
+      packet::logger:
+        level: 0
+        entities:
+          - packet_query
+          - packet_response
+
+      packet::timing:
+        level: 1
+        entities:
+          - packet_timing
