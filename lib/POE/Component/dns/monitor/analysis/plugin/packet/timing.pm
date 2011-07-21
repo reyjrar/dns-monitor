@@ -50,6 +50,7 @@ sub analyze {
 							left join packet_timing t on q.id = t.query_id and t.query_id is null
 							inner join packet_response r on qr.response_id = r.id and r.capture_time is not null
 						where q.capture_time is not null
+							and q.query_ts > NOW() - interval '2 hours'
 		},
 		insert => q{insert into packet_timing ( conversation_id, query_id, response_id, difference )
 						values ( ?, ?, ?, ? ) 
