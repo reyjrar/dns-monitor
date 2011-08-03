@@ -1,11 +1,17 @@
 <%args>
 	$query
-	$results = undef
+	$question
+	$results
 </%args>
-
-<h2>search for '<% $query %>'</h2>
-
-<table>
+<h2>Results for '<% $query %>'</h2>
+<h3><% $question->class %> <% $question->type %> <% $question->name %></h3>
+<div class="prepend-1 span-15 last">
+		Query been asked <strong><% $question->reference_count %></strong> times
+		between <strong><% $question->first_ts->strftime('%F %H:%M') %></strong>
+		and <strong><% $question->last_ts->strftime('%F %H:%M') %></strong>.
+</div>
+<hr class="space">
+<table id="results" class="display">
 <thead>
   <tr>
 	<th>client</th>
@@ -15,7 +21,14 @@
   </tr>
 </thead>
 <tbody>
+% foreach my $entry ( @{ $results } ) {
+  <tr>
+	<td><% $entry->{client} %></td>
+	<td><% $entry->{first} %></td>
+	<td><% $entry->{last} %></td>
+	<td><% $entry->{count} %></td>
+  </tr>
+% } # end foreach rec
 </tbody>
 </table>
-
 <%method title>search results : clients asking</%method>

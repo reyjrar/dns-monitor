@@ -32,6 +32,7 @@ requires 'DateTime';
 requires 'DateTime::Format::HTTP';
 requires 'DateTime::Format::Pg';
 requires 'DateTime::Format::Duration';
+requires 'File::Pid';
 requires 'File::Find::Rule';
 requires 'CHI';
 requires 'EV';

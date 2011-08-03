@@ -3,6 +3,8 @@ use Moose;
 use namespace::autoclean;
 
 use Catalyst::Runtime 5.80;
+use DBIx::Connector;
+use Exception::Class::DBI;
 
 # Set flags and add plugins for the application
 #
@@ -47,6 +49,20 @@ __PACKAGE__->config(
 # Start the application
 __PACKAGE__->setup();
 
+
+has dbconn => ( is => 'ro', lazy => 1, default => sub {
+		DBIx::Connector->new(
+			__PACKAGE__->config->{db}{dsn},
+			__PACKAGE__->config->{db}{user},
+			__PACKAGE__->config->{db}{pass},
+		{
+			PrintError => 0,
+			RaiseError => 0,
+			HandleError => Exception::Class::DBI->handler,
+			AutoCommit => 1,
+			pg_enable_utf8 => 1,
+		});
+});
 
 =head1 NAME
 
