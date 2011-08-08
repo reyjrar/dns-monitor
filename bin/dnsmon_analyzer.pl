@@ -9,25 +9,31 @@
 use strict;
 use warnings;
 use FindBin;
-use DBIx::Connector;
+use Getopt::Std;
 
 # File name processing
 use File::Spec;
 use File::Basename;
 # Config Parsing
 use YAML;
+# Other Essentials
+use DBIx::Connector;
+use Daemon::Daemonize qw( check_pidfile write_pidfile daemonize );
 # POE Environment
 use lib "$FindBin::Bin/../lib";
 sub POE::Kernel::ASSERT_DEFAULT () { 1 } 
 sub POE::Kernel::TRACE_DEFAULT () { 0 } 
 use EV;
 use POE qw(
-	Loop::EV
-	Component::Daemon
 	Component::Logger
 	Component::dns::monitor::analysis
 );
 
+#------------------------------------------------------------------------#
+# Argument handling
+my %OPTS=();
+getopts('d',\%OPTS);
+ 
 #------------------------------------------------------------------------#
 # Locate all the necessary directories
 my @BasePath = File::Spec->splitdir( $FindBin::Bin );
@@ -46,6 +52,22 @@ my %DIRS = (
 my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
 my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
 
+# Daemonize
+if( !$OPTS{d} ) {
+	my $base = basename $0;
+	my $PIDFILE = File::Spec->catfile( $DIRS{cache}, $base . '.pid' );
+
+	my $pid = check_pidfile( $PIDFILE );
+	if( $pid > 0 ) {
+		warn "$base - another process is currently running ($pid)\n";
+		exit 1;
+	}
+	write_pidfile( $PIDFILE );
+	
+	daemonize( chdir => $DIRS{base}, close => 1 );
+	$poe_kernel->has_forked()
+}
+
 # Connect to the Database:
 my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
 	{ RaiseError => 0 } );
@@ -53,7 +75,6 @@ my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}
 #------------------------------------------------------------------------#
 # POE Environment Setup
 #------------------------------------------------------------------------#
-#POE::Component::Daemon->spawn( detach => 1, babysit => 600, max_children => 5 );
 
 #
 # Setup the Logger

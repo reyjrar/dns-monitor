@@ -28,11 +28,11 @@ requires 'YAML';
 requires 'Try::Tiny';
 requires 'Config::General'; # This should reflect the config file format you've chosen
                  # See Catalyst::Plugin::ConfigLoader for supported formats
+requires 'Daemon::Daemonize';
 requires 'DateTime';
 requires 'DateTime::Format::HTTP';
 requires 'DateTime::Format::Pg';
 requires 'DateTime::Format::Duration';
-requires 'File::Pid';
 requires 'File::Find::Rule';
 requires 'CHI';
 requires 'EV';
@@ -50,5 +50,6 @@ test_requires 'Test::More' => '0.88';
 catalyst;
 
 install_script glob('script/*.pl');
+install_script glob('bin/*.pl');
 auto_install;
 WriteAll;

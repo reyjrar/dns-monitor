@@ -31,10 +31,10 @@ INSTALL
 	./devel/deploy_database_schema.pl
 
 	# Run the Sniffer
-	./scripts/sniffer.pl
+	./bin/dnsmon_sniffer.pl
 
 	# Run the analyzer
-	./scripts/analyzer.pl
+	./bin/dnsmon_analyzer.pl
 
 	# Run the application
 	./scripts/dns_monitor.pl -p 3000
@@ -42,7 +42,7 @@ INSTALL
 	# Point your web browser to
 	http://localhost:3000/   # See Stuff
 
-	# Install the ./script/maintenance.pl into the server's crontab
+	# Install the ./bin/dnsmon_maintenance.pl into the server's crontab
 	#  once every 2 hours is more than enough
 
 UPGRADE
