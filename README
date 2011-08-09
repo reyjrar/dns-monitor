@@ -36,14 +36,20 @@ INSTALL
 	# Run the analyzer
 	./bin/dnsmon_analyzer.pl
 
-	# Or alternatively:
-	./devel/monit_config.pl
+		# Or alternatively:
+		./devel/monit_config.pl
 
-	# Run the application
+	# Run the application locally
 	./scripts/dns_monitor.pl -p 3000
 
 	# Point your web browser to
 	http://localhost:3000/   # See Stuff
+
+		# Or deploy using mod_fcgid and Apache with:
+		ln -s ./conf/apache.conf /etc/httpd/conf.d/dnsmonitor.conf
+	
+		# Then navigate to:
+		http://localhost/dns-monitor/
 
 	# Install the ./bin/dnsmon_maintenance.pl into the server's crontab
 	#  once every 2 hours is more than enough
