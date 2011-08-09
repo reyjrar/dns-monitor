@@ -36,6 +36,9 @@ INSTALL
 	# Run the analyzer
 	./bin/dnsmon_analyzer.pl
 
+	# Or alternatively:
+	./devel/monit_config.pl
+
 	# Run the application
 	./scripts/dns_monitor.pl -p 3000
 
