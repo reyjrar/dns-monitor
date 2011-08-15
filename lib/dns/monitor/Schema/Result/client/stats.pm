@@ -22,50 +22,50 @@ __PACKAGE__->table("client_stats");
 
 =head2 client_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 day
 
-  data_type: date
-  default_value: undef
+  data_type: 'date'
   is_nullable: 0
 
 =head2 first_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a541a80)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 last_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a566ec0)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 queries
 
-  data_type: integer
+  data_type: 'integer'
   default_value: 0
   is_nullable: 0
 
 =head2 answers
 
-  data_type: integer
+  data_type: 'integer'
   default_value: 0
   is_nullable: 0
 
 =head2 nx
 
-  data_type: integer
+  data_type: 'integer'
   default_value: 0
   is_nullable: 0
 
 =head2 errors
 
-  data_type: integer
+  data_type: 'integer'
   default_value: 0
   is_nullable: 0
 
@@ -73,25 +73,22 @@ __PACKAGE__->table("client_stats");
 
 __PACKAGE__->add_columns(
   "client_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "day",
-  { data_type => "date", default_value => undef, is_nullable => 0 },
+  { data_type => "date", is_nullable => 0 },
   "first_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "last_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "queries",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
@@ -105,8 +102,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("client_id", "day");
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-12 21:06:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:y4XVF7Di2nP35R6MkqyvrQ
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:56
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hPz04HQVdGLtAgQuzo5Ufw
 
 
 # Relationships

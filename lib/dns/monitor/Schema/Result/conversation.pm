@@ -22,41 +22,41 @@ __PACKAGE__->table("conversation");
 
 =head2 id
 
-  data_type: bigint
-  default_value: SCALAR(0x1a566c20)
+  data_type: 'bigint'
   is_auto_increment: 1
   is_nullable: 0
+  sequence: 'conversation_id_seq'
 
 =head2 server_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 client_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 first_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a5684d0)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 last_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a568e20)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 client_is_server
 
-  data_type: boolean
-  default_value: SCALAR(0x1a568430)
+  data_type: 'boolean'
+  default_value: false
   is_nullable: 0
 
 =cut
@@ -65,35 +65,27 @@ __PACKAGE__->add_columns(
   "id",
   {
     data_type         => "bigint",
-    default_value     => \"nextval('conversation_id_seq'::regclass)",
     is_auto_increment => 1,
     is_nullable       => 0,
+    sequence          => "conversation_id_seq",
   },
   "server_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "client_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "first_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "last_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "client_is_server",
   { data_type => "boolean", default_value => \"false", is_nullable => 0 },
@@ -102,8 +94,8 @@ __PACKAGE__->set_primary_key("id");
 __PACKAGE__->add_unique_constraint("conversation_uniq_server_client", ["server_id", "client_id"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-12 21:06:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1+eNVCGsy2qQ4DWD3MXnBw
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:56
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:r5AQ1yJjArZONhVC1sVwHQ
 
 # Relationships
 __PACKAGE__->has_one('server', 'dns::monitor::Schema::Result::server',

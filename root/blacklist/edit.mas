@@ -1,0 +1,53 @@
+<%args>
+	$blacklist => undef;
+</%args>
+<form id="blacklistForm" method="POST" action="<% $c->uri_for( '/blacklist/save' ) %>" enctype="multipart/form-data">
+<div class="span-17 last">
+	<h1><% defined $blacklist ? "Editing Blacklist: " . $blacklist->name : 'Create a new blacklist source' %></h1>
+
+% if( defined $blacklist ) {
+	<input type="hidden" name="id" id="id" value="<% $blacklist->id %>"/>
+% } else {
+	<div class="last">
+		<label for="name" class="span-4">Name :</label>
+		<input type="text" class="required span-6" name="name" id="name"/>
+	</div>
+% } 
+
+	<div class="last">
+		<label for="type" class="span-4">Type :</label>
+		<input type="text" class="required span-6" name="type" id="type"
+			value="<% defined $blacklist ? $blacklist->type : '' %>"/>
+	</div>
+
+	<div class="last">
+		<label for="can_refresh" class="span-4">Refresh :</label>
+		<select name="can_refresh" name="can_refresh" id="can_refresh">
+			<option value="0">disabled</option>
+			<option value="1"<% defined $blacklist && $blacklist->can_refresh ? 'selected="selected"' : '' %>>enabled</option>
+		</select>
+	</div>
+
+	<div class="last">
+		<label for="refresh_url" class="span-4">Refresh URL :</label>
+		<input type="text" class="span-8" name="refresh_url" id="refresh_url"
+			value="<% defined $blacklist ? $blacklist->refresh_url : '' %>"/>
+	</div>
+
+	<div class="last">
+		<label for="refresh_every" class="span-4">Refresh Interval :</label>
+		<input type="text" class="span-6" name="refresh_every" id="refresh_every"
+			value="<% defined $blacklist ? $blacklist->refresh_every : '' %>"/>
+	</div>
+
+	<div class="last">
+		<label for="source_file" class="span-4">Source File :</label>
+		<input type="file" class="span-6 last" name="source_file" id="source_file"/>
+	</div>
+
+	<div class="last">
+		<input type="submit" class="prepend-4 span-4" name="submit" value="create blacklist"/>
+	</div>
+
+</div>
+</form>

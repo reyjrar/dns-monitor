@@ -22,28 +22,25 @@ __PACKAGE__->table("packet_meta_answer");
 
 =head2 response_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 answer_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 ttl
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_nullable: 0
 
 =head2 section
 
-  data_type: character
-  default_value: answer
+  data_type: 'char'
+  default_value: 'answer'
   is_nullable: 0
   size: 10
 
@@ -51,24 +48,14 @@ __PACKAGE__->table("packet_meta_answer");
 
 __PACKAGE__->add_columns(
   "response_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "answer_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "ttl",
-  { data_type => "bigint", default_value => undef, is_nullable => 0 },
+  { data_type => "bigint", is_nullable => 0 },
   "section",
   {
-    data_type => "character",
+    data_type => "char",
     default_value => "answer",
     is_nullable => 0,
     size => 10,
@@ -77,8 +64,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("response_id", "answer_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-01 16:27:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hyBG6sWoJZ54ePT5lO7o7g
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ty1pw9/ADaV/rhkqkes+og
 
 # Relationships
 __PACKAGE__->has_one('response', 'dns::monitor::Schema::Result::packet::response',

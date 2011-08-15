@@ -22,86 +22,85 @@ __PACKAGE__->table("packet_query");
 
 =head2 id
 
-  data_type: bigint
-  default_value: SCALAR(0x1a56d680)
+  data_type: 'bigint'
   is_auto_increment: 1
   is_nullable: 0
+  sequence: 'packet_query_id_seq'
 
 =head2 client_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 client_port
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_nullable: 1
 
 =head2 server_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 server_port
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_nullable: 1
 
 =head2 query_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a568360)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 query_serial
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_nullable: 0
 
 =head2 conversation_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 opcode
 
-  data_type: character varying
-  default_value: undef
+  data_type: 'varchar'
   is_nullable: 0
   size: 12
 
 =head2 count_questions
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_nullable: 0
 
 =head2 flag_recursive
 
-  data_type: boolean
-  default_value: SCALAR(0x1a568b20)
+  data_type: 'boolean'
+  default_value: false
   is_nullable: 0
 
 =head2 flag_truncated
 
-  data_type: boolean
-  default_value: SCALAR(0x1a56d4a0)
+  data_type: 'boolean'
+  default_value: false
   is_nullable: 0
 
 =head2 flag_checking
 
-  data_type: boolean
-  default_value: SCALAR(0x1a541c70)
+  data_type: 'boolean'
+  default_value: false
   is_nullable: 0
+
+=head2 capture_time
+
+  data_type: 'numeric'
+  is_nullable: 1
+  size: [16,6]
 
 =cut
 
@@ -109,64 +108,47 @@ __PACKAGE__->add_columns(
   "id",
   {
     data_type         => "bigint",
-    default_value     => \"nextval('packet_query_id_seq'::regclass)",
     is_auto_increment => 1,
     is_nullable       => 0,
+    sequence          => "packet_query_id_seq",
   },
   "client_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "client_port",
-  { data_type => "bigint", default_value => undef, is_nullable => 1 },
+  { data_type => "bigint", is_nullable => 1 },
   "server_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "server_port",
-  { data_type => "bigint", default_value => undef, is_nullable => 1 },
+  { data_type => "bigint", is_nullable => 1 },
   "query_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "query_serial",
-  { data_type => "bigint", default_value => undef, is_nullable => 0 },
+  { data_type => "bigint", is_nullable => 0 },
   "conversation_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "opcode",
-  {
-    data_type => "character varying",
-    default_value => undef,
-    is_nullable => 0,
-    size => 12,
-  },
+  { data_type => "varchar", is_nullable => 0, size => 12 },
   "count_questions",
-  { data_type => "bigint", default_value => undef, is_nullable => 0 },
+  { data_type => "bigint", is_nullable => 0 },
   "flag_recursive",
   { data_type => "boolean", default_value => \"false", is_nullable => 0 },
   "flag_truncated",
   { data_type => "boolean", default_value => \"false", is_nullable => 0 },
   "flag_checking",
   { data_type => "boolean", default_value => \"false", is_nullable => 0 },
+  "capture_time",
+  { data_type => "numeric", is_nullable => 1, size => [16, 6] },
 );
 __PACKAGE__->set_primary_key("id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-12 21:06:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:avHiWVmubUv1feczy5zJsw
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:A9JPa/V8Kg/hjbB8iSN+1Q
 
 #------------------------------------------------------------------------#
 # Relationships

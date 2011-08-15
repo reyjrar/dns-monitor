@@ -22,47 +22,47 @@ __PACKAGE__->table("packet_record_question");
 
 =head2 id
 
-  data_type: bigint
-  default_value: SCALAR(0x1a568fe0)
+  data_type: 'bigint'
   is_auto_increment: 1
   is_nullable: 0
+  sequence: 'packet_record_question_id_seq'
 
 =head2 first_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a566f50)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 last_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a56d790)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 name
 
-  data_type: character varying
-  default_value: undef
+  data_type: 'varchar'
   is_nullable: 0
   size: 255
 
 =head2 type
 
-  data_type: character varying
-  default_value: undef
+  data_type: 'varchar'
   is_nullable: 0
   size: 20
 
 =head2 class
 
-  data_type: character varying
-  default_value: IN
+  data_type: 'varchar'
+  default_value: 'IN'
   is_nullable: 0
   size: 10
 
 =head2 reference_count
 
-  data_type: bigint
+  data_type: 'bigint'
   default_value: 0
   is_nullable: 0
 
@@ -72,43 +72,30 @@ __PACKAGE__->add_columns(
   "id",
   {
     data_type         => "bigint",
-    default_value     => \"nextval('packet_record_question_id_seq'::regclass)",
     is_auto_increment => 1,
     is_nullable       => 0,
+    sequence          => "packet_record_question_id_seq",
   },
   "first_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "last_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "name",
-  {
-    data_type => "character varying",
-    default_value => undef,
-    is_nullable => 0,
-    size => 255,
-  },
+  { data_type => "varchar", is_nullable => 0, size => 255 },
   "type",
-  {
-    data_type => "character varying",
-    default_value => undef,
-    is_nullable => 0,
-    size => 20,
-  },
+  { data_type => "varchar", is_nullable => 0, size => 20 },
   "class",
-  {
-    data_type => "character varying",
-    default_value => "IN",
-    is_nullable => 0,
-    size => 10,
-  },
+  { data_type => "varchar", default_value => "IN", is_nullable => 0, size => 10 },
   "reference_count",
   { data_type => "bigint", default_value => 0, is_nullable => 0 },
 );
@@ -116,8 +103,8 @@ __PACKAGE__->set_primary_key("id");
 __PACKAGE__->add_unique_constraint("packet_record_question_uniq", ["class", "type", "name"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-12 21:06:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:tSe0xgm2o7a0W6+s+YuLGg
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rBvoSUUZ4eiWPOT/PV3JDQ
 
 # Relationships
 __PACKAGE__->has_many('meta', 'dns::monitor::Schema::Result::packet::meta::question',

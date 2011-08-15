@@ -22,15 +22,13 @@ __PACKAGE__->table("packet_meta_question");
 
 =head2 query_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 question_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
@@ -38,25 +36,15 @@ __PACKAGE__->table("packet_meta_question");
 
 __PACKAGE__->add_columns(
   "query_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "question_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("query_id", "question_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-01 16:27:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/dcyKc8HidJeTabmZLC55Q
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MmxOFoBIMbSmpxNllFMDBg
 
 # Relationships
 __PACKAGE__->has_one('query', 'dns::monitor::Schema::Result::packet::query',

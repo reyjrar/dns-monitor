@@ -1,0 +1,34 @@
+<%args>
+	$blacklist_rs => undef
+</%args>
+<h1>Blacklist Management</h1>
+
+<ul>
+	<li><a href="<% $c->uri_for('/blacklist/add') %>">new blacklist</a></li>
+</ul>
+
+<h2>Current Blacklists</h2>
+% if ( defined $blacklist_rs ) {
+<table>
+<thead>
+	<th>Name</th>
+	<th>Type</th>
+	<th>Last Refresh</th>
+	<th>Delete</th>
+	<th>Edit</th>
+</thead>
+<tbody>
+% while( my $list = $blacklist_rs->next ) {
+  <tr>
+	<td><% $list->name %></td>
+	<td><% $list->type %></td>
+	<td><% $list->refresh_last_ts %></td>
+	<td><a href="<% $c->uri_for( '/blacklist/delete/' . $list->id ) %>">delete</a></td>
+	<td><a href="<% $c->uri_for( '/blacklist/edit/' . $list->id ) %>">edit</a></td>
+  </tr>
+% }
+</tbody>
+</table>
+% } else {
+<div>No black lists configured, <a href="<% $c->uri_for('/blacklist/add') %>">add one</a>.</div>
+% }

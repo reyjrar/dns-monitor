@@ -121,3 +121,14 @@ upgrade:
         level: 1
         entities:
           - packet_timing
+
+  20110804:
+    plugins:
+      blacklist:
+        level: 0
+        entities:
+          - blacklist
+          - blacklisted
+          - blacklisted_question
+          - blacklisted_answer
+

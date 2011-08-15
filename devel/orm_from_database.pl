@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -34,10 +34,16 @@ make_schema_at(
 				packet_meta_question		=> 'packet::meta::question',
 				packet_meta_answer			=> 'packet::meta::answer',
 				packet_meta_query_response	=> 'packet::meta::query_response',
+				packet_timing				=> 'packet::timing',
 				# Zone Discovery
 				zone						=> 'zone',
 				zone_question				=> 'zone::meta::question',
 				zone_answer					=> 'zone::meta::answer',
+				# Blacklist Plugin
+				blacklist					=> 'blacklist',
+				blacklisted					=> 'blacklisted',
+				blacklisted_question		=> 'blacklisted::question',
+				blacklisted_answer			=> 'blacklisted::answer',
 			);
 
 			return $map{$table} if exists $map{$table};

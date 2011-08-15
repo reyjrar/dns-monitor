@@ -22,15 +22,13 @@ __PACKAGE__->table("zone_answer");
 
 =head2 zone_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 answer_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
@@ -38,25 +36,15 @@ __PACKAGE__->table("zone_answer");
 
 __PACKAGE__->add_columns(
   "zone_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "answer_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("zone_id", "answer_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-01 16:27:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:r7S3F+b+lGCcClPwt8vtqA
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3w+rHPEch/cOYqw6XXVuMA
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

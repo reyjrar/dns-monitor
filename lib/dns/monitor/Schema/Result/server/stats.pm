@@ -22,74 +22,72 @@ __PACKAGE__->table("server_stats");
 
 =head2 server_id
 
-  data_type: bigint
-  default_value: undef
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
 =head2 first_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x19d23850)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 last_ts
 
-  data_type: timestamp without time zone
-  default_value: SCALAR(0x1a53f060)
+  data_type: 'timestamp'
+  default_value: current_timestamp
   is_nullable: 0
+  original: {default_value => \"now()"}
 
 =head2 queries
 
-  data_type: bigint
+  data_type: 'bigint'
   default_value: 0
   is_nullable: 0
 
 =head2 answers
 
-  data_type: bigint
+  data_type: 'bigint'
   default_value: 0
   is_nullable: 0
 
 =head2 nx
 
-  data_type: integer
+  data_type: 'integer'
   default_value: 0
   is_nullable: 0
 
 =head2 errors
 
-  data_type: integer
+  data_type: 'integer'
   default_value: 0
   is_nullable: 0
 
 =head2 day
 
-  data_type: date
-  default_value: SCALAR(0x1a568290)
+  data_type: 'date'
+  default_value: ('now'::text)::date
   is_nullable: 0
 
 =cut
 
 __PACKAGE__->add_columns(
   "server_id",
-  {
-    data_type      => "bigint",
-    default_value  => undef,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "first_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "last_ts",
   {
-    data_type     => "timestamp without time zone",
-    default_value => \"now()",
+    data_type     => "timestamp",
+    default_value => \"current_timestamp",
     is_nullable   => 0,
+    original      => { default_value => \"now()" },
   },
   "queries",
   { data_type => "bigint", default_value => 0, is_nullable => 0 },
@@ -109,8 +107,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("server_id", "day");
 
 
-# Created by DBIx::Class::Schema::Loader v0.05002 @ 2011-03-12 21:06:28
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:kRanflbjEwkDpXvKhS2pJg
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:OeJb6SkHdnK274V7Gi3N9Q
 
 # Relationships
 __PACKAGE__->belongs_to( 'server' => 'dns::monitor::Schema::Result::server' =>
