@@ -41,8 +41,8 @@ my @menuItems = (
 		],
 	},
 	{
-		title	=> 'blacklists',
-		url		=> '/blacklist'
+		title	=> 'lists',
+		url		=> '/list'
 	},
 	{
 		title	=> 'utilities',

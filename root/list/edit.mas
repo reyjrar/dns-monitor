@@ -1,0 +1,67 @@
+<%args>
+	$list => undef
+	$types
+</%args>
+<form id="listForm" method="POST" action="<% $c->uri_for( '/list/save' ) %>" enctype="multipart/form-data">
+<div class="span-17 last">
+	<h1><% defined $list ? "editing list: " . $list->name : 'create a new list' %></h1>
+
+% if( defined $list ) {
+	<input type="hidden" name="id" id="id" value="<% $list->id %>"/>
+% } else {
+	<div class="last">
+		<label for="name" class="span-4">Name :</label>
+		<input type="text" class="required span-6" name="name" id="name"/>
+	</div>
+% } 
+
+	<div class="last">
+		<label for="list_type" class="span-4">Type :</label>
+		<select name="list_type" name="list_type" id="list_type">
+%		while( my $type = $types->next ) {
+			<option value="<% $type->id %>"<% defined $list && $list->type_id == $type->id ? 'selected="selected"' : '' %>>
+				<% $type->name %></option>
+%		}
+		</select>
+	</div>
+
+	<div class="last">
+		<label for="can_refresh" class="span-4">Refresh :</label>
+		<select name="can_refresh" name="can_refresh" id="can_refresh">
+			<option value="0">disabled</option>
+			<option value="1"<% defined $list && $list->can_refresh ? 'selected="selected"' : '' %>>enabled</option>
+		</select>
+	</div>
+
+	<div class="last">
+		<label for="track" class="span-4">Tracking :</label>
+		<select name="track" name="track" id="track">
+			<option value="0">disabled</option>
+			<option value="1"<% defined $list && $list->track ? 'selected="selected"' : '' %>>enabled</option>
+		</select>
+	</div>
+
+
+	<div class="last">
+		<label for="refresh_url" class="span-4">Refresh URL :</label>
+		<input type="text" class="span-8" name="refresh_url" id="refresh_url"
+			value="<% defined $list ? $list->refresh_url : '' %>"/>
+	</div>
+
+	<div class="last">
+		<label for="refresh_every" class="span-4">Refresh Interval :</label>
+		<input type="text" class="span-6" name="refresh_every" id="refresh_every"
+			value="<% defined $list ? $list->refresh_every : '' %>"/>
+	</div>
+
+	<div class="last">
+		<label for="source_file" class="span-4">Source File :</label>
+		<input type="file" class="span-6 last" name="source_file" id="source_file"/>
+	</div>
+
+	<div class="last">
+		<input type="submit" class="prepend-4 span-4" name="submit" value="create list"/>
+	</div>
+
+</div>
+</form>

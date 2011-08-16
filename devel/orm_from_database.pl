@@ -39,11 +39,13 @@ make_schema_at(
 				zone						=> 'zone',
 				zone_question				=> 'zone::meta::question',
 				zone_answer					=> 'zone::meta::answer',
-				# Blacklist Plugin
-				blacklist					=> 'blacklist',
-				blacklisted					=> 'blacklisted',
-				blacklisted_question		=> 'blacklisted::question',
-				blacklisted_answer			=> 'blacklisted::answer',
+				# List Plugin
+				list						=> 'list',
+				list_type					=> 'list::type',
+				list_entry					=> 'list::entry',
+				list_meta_question			=> 'list::meta::question',
+				list_meta_answer			=> 'list::meta::answer',
+				list_tracking_client		=> 'list::tracking::client',
 			);
 
 			return $map{$table} if exists $map{$table};

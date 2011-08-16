@@ -132,3 +132,22 @@ upgrade:
           - blacklisted_question
           - blacklisted_answer
 
+  20110816:
+    plugins:
+      blacklist:
+        level: 0
+        entities:
+          - blacklisted_answer
+          - blacklisted_question
+          - blacklisted
+          - blacklist
+      list:
+        level: 0
+        entities:
+          - list_type
+          - list
+          - list_entry
+          - list_meta_question
+          - list_meta_answer
+          - list_tracking_client
+

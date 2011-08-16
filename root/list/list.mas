@@ -1,0 +1,36 @@
+<%args>
+	$list_rs => undef
+</%args>
+<h1>List Management</h1>
+
+<ul>
+	<li><a href="<% $c->uri_for('/list/add') %>">new list</a></li>
+</ul>
+
+<h2>Current Lists</h2>
+% if ( defined $list_rs ) {
+<table>
+<thead>
+	<th>Name</th>
+	<th>Type</th>
+	<th>Last Refresh</th>
+	<th>Entries</th>
+	<th>Delete</th>
+	<th>Edit</th>
+</thead>
+<tbody>
+% while( my $list = $list_rs->next ) {
+  <tr>
+	<td><% $list->name %></td>
+	<td><% $list->type->name %></td>
+	<td><% $list->refresh_last_ts %></td>
+	<td><% $list->entries->count %></td>
+	<td><a href="<% $c->uri_for( '/list/delete/' . $list->id ) %>">delete</a></td>
+	<td><a href="<% $c->uri_for( '/list/edit/' . $list->id ) %>">edit</a></td>
+  </tr>
+% }
+</tbody>
+</table>
+% } else {
+<div>No lists configured, <a href="<% $c->uri_for('/list/add') %>">add one</a>.</div>
+% }

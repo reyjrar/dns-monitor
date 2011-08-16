@@ -1,4 +1,4 @@
-package dns::monitor::Schema::Result::blacklist;
+package dns::monitor::Schema::Result::list;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
@@ -12,11 +12,11 @@ __PACKAGE__->load_components("InflateColumn::DateTime", "PK::Auto");
 
 =head1 NAME
 
-dns::monitor::Schema::Result::blacklist
+dns::monitor::Schema::Result::list
 
 =cut
 
-__PACKAGE__->table("blacklist");
+__PACKAGE__->table("list");
 
 =head1 ACCESSORS
 
@@ -25,7 +25,7 @@ __PACKAGE__->table("blacklist");
   data_type: 'integer'
   is_auto_increment: 1
   is_nullable: 0
-  sequence: 'blacklist_id_seq'
+  sequence: 'list_id_seq'
 
 =head2 name
 
@@ -33,12 +33,17 @@ __PACKAGE__->table("blacklist");
   is_nullable: 0
   size: 80
 
-=head2 type
+=head2 type_id
 
-  data_type: 'char'
-  default_value: 'malicious'
+  data_type: 'smallint'
+  is_foreign_key: 1
   is_nullable: 0
-  size: 15
+
+=head2 track
+
+  data_type: 'boolean'
+  default_value: false
+  is_nullable: 0
 
 =head2 can_refresh
 
@@ -71,17 +76,14 @@ __PACKAGE__->add_columns(
     data_type         => "integer",
     is_auto_increment => 1,
     is_nullable       => 0,
-    sequence          => "blacklist_id_seq",
+    sequence          => "list_id_seq",
   },
   "name",
   { data_type => "varchar", is_nullable => 0, size => 80 },
-  "type",
-  {
-    data_type => "char",
-    default_value => "malicious",
-    is_nullable => 0,
-    size => 15,
-  },
+  "type_id",
+  { data_type => "smallint", is_foreign_key => 1, is_nullable => 0 },
+  "track",
+  { data_type => "boolean", default_value => \"false", is_nullable => 0 },
   "can_refresh",
   { data_type => "boolean", default_value => \"false", is_nullable => 0 },
   "refresh_url",
@@ -94,9 +96,16 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:56
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:H+35a9OIcX/A5X2Ub2S7Vw
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-16 13:01:45
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9ob3SjYp9lxHGbpYQvl8ZQ
 
 
-# You can replace this text with custom code or comments, and it will be preserved on regeneration
+# Relationships
+__PACKAGE__->has_many('entries' => 'dns::monitor::Schema::Result::list::entry' =>
+	{ 'foreign.list_id' => 'self.id' }
+);
+__PACKAGE__->belongs_to('type' => 'dns::monitor::Schema::Result::list::type' =>
+	{ 'foreign.id' => 'self.type_id' }
+);
+
 1;

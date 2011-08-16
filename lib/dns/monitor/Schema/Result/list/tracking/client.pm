@@ -1,4 +1,4 @@
-package dns::monitor::Schema::Result::blacklisted;
+package dns::monitor::Schema::Result::list::tracking::client;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
@@ -12,11 +12,11 @@ __PACKAGE__->load_components("InflateColumn::DateTime", "PK::Auto");
 
 =head1 NAME
 
-dns::monitor::Schema::Result::blacklisted
+dns::monitor::Schema::Result::list::tracking::client
 
 =cut
 
-__PACKAGE__->table("blacklisted");
+__PACKAGE__->table("list_tracking_client");
 
 =head1 ACCESSORS
 
@@ -25,30 +25,25 @@ __PACKAGE__->table("blacklisted");
   data_type: 'integer'
   is_auto_increment: 1
   is_nullable: 0
-  sequence: 'blacklisted_id_seq'
+  sequence: 'list_tracking_client_id_seq'
 
-=head2 blacklist_id
+=head2 list_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 zone
+=head2 client_id
 
-  data_type: 'varchar'
-  is_nullable: 0
-  size: 255
-
-=head2 path
-
-  data_type: 'ltree'
+  data_type: 'integer'
+  is_foreign_key: 1
   is_nullable: 0
 
-=head2 blacklist_refreshed
+=head2 reference_count
 
-  data_type: 'boolean'
-  default_value: false
-  is_nullable: 0
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
 
 =head2 first_ts
 
@@ -72,16 +67,14 @@ __PACKAGE__->add_columns(
     data_type         => "integer",
     is_auto_increment => 1,
     is_nullable       => 0,
-    sequence          => "blacklisted_id_seq",
+    sequence          => "list_tracking_client_id_seq",
   },
-  "blacklist_id",
+  "list_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "zone",
-  { data_type => "varchar", is_nullable => 0, size => 255 },
-  "path",
-  { data_type => "ltree", is_nullable => 0 },
-  "blacklist_refreshed",
-  { data_type => "boolean", default_value => \"false", is_nullable => 0 },
+  "client_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "reference_count",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
   "first_ts",
   {
     data_type     => "timestamp",
@@ -97,12 +90,11 @@ __PACKAGE__->add_columns(
     original      => { default_value => \"now()" },
   },
 );
-__PACKAGE__->set_primary_key("id");
-__PACKAGE__->add_unique_constraint("blacklisted_uniq", ["zone", "blacklist_id"]);
+__PACKAGE__->set_primary_key("list_id", "client_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:56
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SO4z9KtRaWtojpJMoPebZw
+# Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-16 13:01:45
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:HhhYhLZZiGsXw55zPI7HtA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
