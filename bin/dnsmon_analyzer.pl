@@ -70,7 +70,7 @@ if( !$OPTS{d} ) {
 
 # Connect to the Database:
 my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
-	{ RaiseError => 0 } );
+	{ RaiseError => 0, PrintError => 0 } );
 
 #------------------------------------------------------------------------#
 # POE Environment Setup

@@ -70,3 +70,6 @@ plugins:
 
   zone::discovery;
     enable: 1
+
+  list::meta:
+    enable: 1
