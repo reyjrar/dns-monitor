@@ -62,9 +62,9 @@ if( !$OPTS{d} ) {
 		warn "$base - another process is currently running ($pid)\n";
 		exit 1;
 	}
-	write_pidfile( $PIDFILE );
 	
 	daemonize( chdir => $DIRS{base}, close => 1 );
+	write_pidfile( $PIDFILE );
 	$poe_kernel->has_forked()
 }
 

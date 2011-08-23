@@ -45,6 +45,7 @@ requires 'Net::DNS';
 requires 'Net::IP::Resolver';
 requires 'NetPacket';
 requires 'RRDs';
+requires 'WWW::Mechanize';
 requires 'Module::Pluggable';
 test_requires 'Test::More' => '0.88';
 catalyst;

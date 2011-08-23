@@ -6,6 +6,7 @@ use POE;
 use DateTime;
 use YAML;
 use Try::Tiny;
+use WWW::Mechanize;
 
 sub spawn {
 	my $self = shift;
@@ -21,6 +22,7 @@ sub spawn {
 		list_meta_start => \&list_meta_start,
 		analyze => \&analyze,
 		notify => \&notify,
+		refresh => \&refresh,
 	});
 
 	return $sess->ID;
@@ -56,6 +58,10 @@ sub analyze {
 		'check_question' => q{select question_id from zone_question where zone_id = ?},
 		'insert_answer'		=> q{insert into list_meta_answer ( answer_id, list_entry_id ) values ( ?, ? )},
 		'insert_question'	=> q{insert into list_meta_question ( question_id, list_entry_id ) values ( ?, ? )},
+		'refresh_check' => q{select id from list
+								where can_refresh = true
+									and NOW() - refresh_last_ts > refresh_every
+		},
 	);
 	my %STH = ();
 	foreach my $s ( keys %SQL ) {
@@ -84,8 +90,20 @@ sub analyze {
 	}
 	$kernel->post( $heap->{log} => debug => "list::meta posted $updates updates");
 
+	$STH{refresh_check}->execute();
+	while( my ($id) = $STH{refresh_check}->fetchrow_array ) {
+		$kernel->yield( refresh => $id );
+	}
+	
+
 	# Schedule the Analysis
 	$kernel->delay_add( analyze => $heap->{interval} );
+}
+
+# Do URL Refreshes
+sub refresh {
+	my ( $kernel, $heap, $list_id ) = @_[KERNEL,HEAP,ARG0];
+	$kernel->call( $heap->{log} => debug => "list::meta refreshing list_id:$list_id");
 }
 
 # Notification of Unauthorized Servers
