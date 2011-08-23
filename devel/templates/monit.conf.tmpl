@@ -1,7 +1,7 @@
 check process dnsmon_sniffer with pidfile [% baseDir %]/cache/dnsmon_sniffer.pl.pid
 	group dnsmonitor
 	start program = "[% perl %] [% baseDir %]/bin/dnsmon_sniffer.pl"
-	stop program = "/bin/bash -c 'kill -s SIGTERM `cat [% baseDir %]/cache/dnsmon_sniffer.pl.pid`"
+	stop program = "/bin/bash -c 'kill -s SIGTERM `cat [% baseDir %]/cache/dnsmon_sniffer.pl.pid`'"
 	if 5 restarts within 5 cycles then timeout
 	if totalmem > 100 MB then alert
 	depends on dnsmon_sniffer_bin
@@ -16,7 +16,7 @@ check file dnsmon_sniffer_bin with path [% baseDir %]/bin/dnsmon_sniffer.pl
 check process dnsmon_analyzer with pidfile [% baseDir %]/cache/dnsmon_analyzer.pl.pid
 	group dnsmonitor
 	start program = "[% perl %] [% baseDir %]/bin/dnsmon_analyzer.pl"
-	stop program = "/bin/bash -c 'kill -s SIGTERM `cat [% baseDir %]/cache/dnsmon_analyzer.pl.pid`"
+	stop program = "/bin/bash -c 'kill -s SIGTERM `cat [% baseDir %]/cache/dnsmon_analyzer.pl.pid`'"
 	if 5 restarts within 5 cycles then timeout
 	if totalmem > 100 MB then alert
 	depends on dnsmon_analyzer_bin
