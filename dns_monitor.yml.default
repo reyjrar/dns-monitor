@@ -1,6 +1,7 @@
 ---
 name: dns::monitor
 log_cfg: ./conf/logging.conf
+statedir: /var/run/dnsmonitor
 time_zone: America/New_York
 rrd: &GLOBALrrd
   dir: ./cache/rrd

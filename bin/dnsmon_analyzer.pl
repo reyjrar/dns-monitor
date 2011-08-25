@@ -51,11 +51,13 @@ my %DIRS = (
 # Load Configuration
 my $configFile = File::Spec->catfile( $DIRS{base}, 'dns_monitor.yml' );
 my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n";
+$DIRS{state} = $CFG->{statedir};
 
 # Daemonize
 if( !$OPTS{d} ) {
 	my $base = basename $0;
-	my $PIDFILE = File::Spec->catfile( $DIRS{cache}, $base . '.pid' );
+	mkdir $DIRS{state}, 0755 unless -d $DIRS{state};
+	my $PIDFILE = File::Spec->catfile( $DIRS{state}, $base . '.pid' );
 
 	my $pid = check_pidfile( $PIDFILE );
 	if( $pid > 0 ) {
@@ -63,9 +65,9 @@ if( !$OPTS{d} ) {
 		exit 1;
 	}
 	
-	daemonize( chdir => $DIRS{base}, close => 1 );
+	daemonize( chdir => $DIRS{base}, close => 'std' );
 	write_pidfile( $PIDFILE );
-	$poe_kernel->has_forked()
+	$poe_kernel->has_forked();
 }
 
 # Connect to the Database:
