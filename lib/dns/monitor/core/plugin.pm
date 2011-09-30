@@ -10,7 +10,7 @@ has log_alias => ( isa => 'HashRef', is => 'ro', default => sub { 'log' } );
 has interval => ( isa => 'PositiveInt', is => 'ro', default => sub { 600 } );
 
 sub START {
-	my ($self) = @_[OBJECT];
+	my ($self,$kernel) = @_[OBJECT,KERNEL];
 
 	$self->alias( $self->name );
 	$self->delay_add( maintenance => $self->interval );

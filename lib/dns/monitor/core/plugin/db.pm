@@ -6,7 +6,7 @@ extends 'dns::monitor::core::plugin';
 
 has dbconn => (
 	isa => 'Object',
-	is => ro,
+	is => 'ro',
 	required => 1,
 );
 

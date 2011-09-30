@@ -1,6 +1,6 @@
 package dns::monitor::plugin::sniffer;
 
-use MooseX::POE::Role;
+use Moose::Role;
 
 requires 'process';
 

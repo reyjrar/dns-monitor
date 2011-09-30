@@ -5,11 +5,6 @@ use MooseX::POE;
 
 extends qw(dns::monitor::core::plugin);
 
-with qw(
-	dns::monitor::core::util
-	dns::monitor::plugin::sniffer
-);
-
 has cache => ( isa => 'HashRef', is => 'rw', default => sub { {} } );
 
 event process => sub {
@@ -31,9 +26,16 @@ event flush_entry => sub {
 };
 
 before maintenance => sub {
-	my ($self) = @_[OBJECT];
+	my $self = $_[OBJECT];
 };
 
+
+# Add Roles
+with qw(
+	dns::monitor::core::util
+	dns::monitor::plugin::sniffer
+);
+
 no MooseX::POE;
-__PACKAGE__->make_immutable;
+__PACKAGE__->meta->make_immutable;
 1;

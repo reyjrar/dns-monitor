@@ -4,13 +4,13 @@ use Moose;
 
 extends 'dns::monitor::plugin::sniffer::log';
 
-with 'dns::monitor::plugin::sniffer::log::dest';
-
 sub write {
 	my ($self,$line) = @_;
 
 	print $line,"\n";
 }
+
+with 'dns::monitor::plugin::sniffer::log::dest';
 
 no Moose;
 __PACKAGE__->meta->make_immutable();
