@@ -5,15 +5,22 @@ use warnings;
 use POE;
 use DateTime;
 use DateTime::Format::Pg;
+use Digest::SHA qw( sha1_hex );
 use YAML;
 use Try::Tiny;
+use Sys::Syslog;
+
+my %_SECTION_CODE = (
+	answer		=> 'ANS',
+	additional	=> 'ADD',
+	authority	=> 'AUTH',
+);
 
 sub spawn {
 	my $self = shift;
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -22,6 +29,7 @@ sub spawn {
 		packet_logger_start => \&packet_logger_start,
 		process => \&process,
 		maintenance => \&packet_logger_maintenance,
+		flush_entry => \&packet_logger_flush_entry,
 	});
 
 	return $sess->ID;
@@ -34,85 +42,63 @@ sub packet_logger_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{dbh} = $args->{DBH};
 
 	# Set the Config
 	my %cfg = (
+		facility => 'user',
+		priority => 'notice',
+		log_uuid => 0,
 		%{ $args->{Config} },
 	);
 	$heap->{config} = \%cfg;
 
 	# Caching
-	my %_qcache = ();
-	$heap->{qcache} = CHI->new( driver => 'Memory', datastore => \%_qcache, expires_in => 90 );
-	$heap->{__qcache} = \%_qcache;
+	$heap->{cache} = ();
 
-	# Statement Handle Caching
-	my %SQL = (
-		query => q{select add_query( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )},
-		question => q{select find_or_create_question( ?, ?, ?, ? ) },
-		response => q{select add_response( ?, ?, ?, ?, ?, ?, ?,
-											?, ?, ?, ?, ?, ?, ?,
-											?, ?, ?, ?, ?, ? )},
-		answer => q{select find_or_create_answer( ?, ?, ?, ?, ?, ?, ?, ? )},
-		query_response => q{select link_query_response( ?, ? )},
-	);
-	foreach my $s (keys %SQL) {
-		$heap->{sth}{$s} = $heap->{dbh}->run( fixup => sub {
-				my $sth = $_->prepare( $SQL{$s} );
-				$sth;
-			}, catch {
-				my $err = shift;
-				$kernel->post( $heap->{log} => notice => qq|packet::logger STH: $s failed: $err| );
-			}
-		);
-	}
+	# Open the logger
+	openlog( 'dns-monitor', '', $heap->{config}->{facility} );
 
 	# Trigger Maintenance
-	$kernel->delay_add( 'maintenance', 30 );
+	$kernel->delay_add( 'maintenance', 60 );
 }
 
 sub process {
 	my ( $kernel,$heap,$dnsp,$info ) = @_[KERNEL,HEAP,ARG0,ARG1];
 
-	# Packet ID
-	my $packet_id = join(';', $info->{conversation_id}, $dnsp->header->id );
+	# UUID
+	my $uuid = sha1_hex join(';', 
+							$info->{server}, $info->{server_port},
+							$info->{client}, $info->{client_port},
+				$dnsp->header->id
+	);
 
 	# Check for query/response
 	if( $dnsp->header->qr ) {
-		# Grab Queriy id from cache:
-		my $query_id = $heap->{qcache}->get( $packet_id );
-		# Answer
-		$heap->{sth}{response}->execute(
-			$info->{conversation_id},
-			$info->{client_id},
-			$info->{client_port},
-			$info->{server_id},
-			$info->{server_port},
-			$dnsp->header->id,
-			$dnsp->header->opcode,
-			$dnsp->header->rcode,
-			$dnsp->answersize,
-			$dnsp->header->ancount,
-			$dnsp->header->arcount,
-			$dnsp->header->nscount,
-			$dnsp->header->qdcount,
-			$dnsp->header->aa,
-			$dnsp->header->ad,
-			$dnsp->header->tc,
-			$dnsp->header->cd,
-			$dnsp->header->rd,
-			$dnsp->header->ra,
-			$info->{time},
-		);
 
-		my ($response_id) = $heap->{sth}{response}->fetchrow_array;
-		return unless defined $response_id && $response_id > 0;
+		# Grab entry from cache:
+		my $entry = delete $heap->{cache}{$uuid};
+		# If there isn't an entry, create one and set the the flushed flag
+		$entry ||= { uuid => $uuid, flushed => 1 };
 
-		# Link Query / Response
-		if( defined $query_id ) {
-			$heap->{sth}{query_response}->execute($query_id, $response_id);
-		}
+		# Answer Header
+		$entry->{a} = {
+			'time'	=> $info->{time},
+			cli		=> join(':', $info->{client}, $info->{client_port} ),
+			srv		=> join(':', $info->{server}, $info->{server_port} ),
+			id		=> $dnsp->header->id,
+			op		=> $dnsp->header->opcode,
+			qcnt	=> $dnsp->header->qdcount,
+			cd		=> $dnsp->header->cd,
+			rd		=> $dnsp->header->rd,
+			status	=> $dnsp->header->rcode,
+			size	=> $dnsp->answersize,
+			anscnt	=> $dnsp->header->ancount,
+			addcnt	=> $dnsp->header->arcount,
+			authcnt	=> $dnsp->header->nscount,
+			authr	=> $dnsp->header->aa,
+			authn	=> $dnsp->header->ad,
+			ra		=> $dnsp->header->ra,
+		};
 
 		my @sets = ();
 		
@@ -123,7 +109,7 @@ sub process {
 				@records = $dnsp->$section();
 			};
 			if( @records ) {
-				push @sets, { name => $section, rr => \@records };
+				push @sets, { name => $_SECTION_CODE{$section}, rr => \@records };
 			}
 		}
 		foreach my $set ( @sets ) {
@@ -132,48 +118,87 @@ sub process {
 				
 				next unless defined $data{value} && length $data{value};
 				
-				$heap->{sth}{answer}->execute(
-					$response_id,
-					$set->{name},
-					$pa->ttl,
-					$pa->class,
-					$pa->type,
-					$pa->name,
-					$data{value},
-					$data{opts},
-				);
+				push @{ $entry->{ar} }, {
+					sect	=> $set->{name},
+					class	=> $pa->class,
+					rtype	=> $pa->type,
+					name	=> $pa->name,
+					value	=> $data{value},
+					opts	=> $data{opts},
+					ttl		=> $pa->ttl,
+				};
 			}
 		}
+
+		$kernel->yield( 'flush_entry' => $entry );
 	}
 	else {
 		# Query
-		$heap->{sth}{query}->execute(
-			$info->{conversation_id},
-			$info->{client_id},
-			$info->{client_port},
-			$info->{server_id},
-			$info->{server_port},
-			$dnsp->header->id,
-			$dnsp->header->opcode,
-			$dnsp->header->qdcount,
-			$dnsp->header->rd,
-			$dnsp->header->tc,
-			$dnsp->header->cd,
-			$info->{time},
+		my %entry = (
+			proc_time => time,
+			uuid => $uuid,
 		);
-
-		my ($query_id) = $heap->{sth}{query}->fetchrow_array;
-		return unless defined $query_id && $query_id > 0;
+		$entry{q} = {
+			'time'	=> $info->{time},
+			cli		=> join(':', $info->{client}, $info->{client_port} ),
+			srv		=> join(':', $info->{server}, $info->{server_port} ),
+			id		=> $dnsp->header->id,
+			op		=> $dnsp->header->opcode,
+			qcnt	=> $dnsp->header->qdcount,
+			rd		=> $dnsp->header->rd,
+			cd		=> $dnsp->header->cd,
+		};
 
 		# Set Cache:
-		$heap->{qcache}->set( $packet_id, $query_id );
 		foreach my $pq ( $dnsp->question ) {
-			$heap->{sth}{question}->execute(
-				$query_id,
-				$pq->qclass,
-				$pq->qtype,
-				$pq->qname
-			);
+			push @{ $entry{qr} }, {
+				class	=> $pq->qclass,
+				rtype	=> $pq->qtype,
+				name	=> $pq->qname,
+			};
+		}
+
+		# Store it in the cache
+		$heap->{cache}{$uuid} = \%entry;
+	}
+}
+
+sub packet_logger_flush_entry {
+	my($kernel,$heap,$entry) = @_[KERNEL,HEAP,ARG0];
+
+	foreach my $t (qw{ q qr a ar }) {
+		my $rec = exists $entry->{$t} ? $entry->{$t} : undef;
+		next unless defined $rec;
+
+		my $line = qq{type=$t};
+		$line .= qq{ uuid=$entry->{uuid}} if $heap->{cfg}{log_uuid};
+		$line .= ' flushed=1' if( exists $entry->{flushed} && $entry->{flushed} );
+
+		if( ref $rec eq 'ARRAY' ) {
+			foreach my $item ( @{ $rec } ) {
+				my $subline = $line;
+				foreach my $field (qw(sect class rtype name value opts ttl)) {
+					if( exists $item->{$field} ) {
+						$subline .= qq{ $field=$item->{$field}};
+					}
+				}
+				syslog( $heap->{config}{priority}, $subline ); 
+			}
+
+		}
+		elsif( ref $rec eq 'HASH' ) {
+			foreach my $field (qw(time srv cli id op status rd cd size qcnt anscnt addcnt authcnt ra authn authr ) ) {
+				if( exists $rec->{$field} ) {
+					# Handle flags gracefully
+					my $value = $rec->{$field} ? $rec->{$field} : 0;
+					$line .= qq{ $field=$value};
+				}
+			}
+			syslog( $heap->{config}{priority}, $line ); 
+		}
+		else {
+			$kernel->call('log' => 'notice' => "packet::logger->flush_entry handed invalid reference for UUID: $entry->{uuid}");
+			next;
 		}
 	}
 }
@@ -181,11 +206,23 @@ sub process {
 sub packet_logger_maintenance {
 	my ($kernel,$heap) = @_[KERNEL,HEAP];
 
-	# Purge the Query Cache
-	$heap->{qcache}->purge();
+	# Expire after 20 seconds and now response
+	my $expire = time - 20;
 
+	# Purge the Query Cache
+	foreach my $uuid (keys %{ $heap->{cache} }) {
+		if( $heap->{cache}{$uuid}{proc_time} < $expire ) {
+			my $entry = delete $heap->{cache}{$uuid};
+			$entry->{flushed} = 1;
+
+			$kernel->yield( flush_entry => $entry );
+		}
+	}
+
+	my $entries = scalar keys %{ $heap->{cache} };
+	$kernel->call( $heap->{log} => debug => "logger cache at $entries entries" );
 	# Reschedule
-	$kernel->delay_add( 'maintenance', 600 );
+	$kernel->delay_add( 'maintenance', 60 );
 }
 
 sub _get_rr_data {

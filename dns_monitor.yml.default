@@ -63,6 +63,12 @@ plugins:
     <<: *GLOBALrrd
 
   packet::logger:
+    enabled: 0
+    facility: user
+    priority: notice
+    log_uuid: 0
+
+  packet::store:
     enable: 1
     keep_for: 8 days
 
