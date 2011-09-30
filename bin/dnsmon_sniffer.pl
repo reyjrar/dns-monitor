@@ -76,8 +76,12 @@ if( !$OPTS{d} ) {
 $SIG{INT} = sub { exit };
 
 # Connect to the Database:
-my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
-	{ RaiseError => 0 } );
+my $dbConn = undef;
+if( exists $CFG->{db} && ref $CFG->{db} eq 'HASH' ) {
+	$dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
+		{ RaiseError => 0 }
+	);
+}
 
 #------------------------------------------------------------------------#
 # POE Environment Setup
