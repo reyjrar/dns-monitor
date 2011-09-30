@@ -321,25 +321,28 @@ sub sniffer_dns_parse {
 	}
 
 	# Conversations
-	my $dbError = undef;
-	my $sth = $heap->{dbh}->run( fixup => sub {
-			my $sth = $_->prepare('select * from find_or_create_conversation( ?, ? )');
-			$sth->execute( $info{client}, $info{server} );
-			$sth;
-		}, catch {
-			$dbError = "find_or_create_conversation failed: $_";
+	my %ID = ();
+	if( defined $heap->{dbh} && ref $heap->{dbh} eq 'DBIx::Connector' ) {
+		my $dbError = undef;
+		my $sth = $heap->{dbh}->run( fixup => sub {
+				my $sth = $_->prepare('select * from find_or_create_conversation( ?, ? )');
+				$sth->execute( $info{client}, $info{server} );
+				$sth;
+			}, catch {
+				$dbError = "find_or_create_conversation failed: $_";
+			}
+		);
+		if( $dbError || $sth->rows == 0 ) {
+			$kernel->post( $heap->{log} => notice => qq|conversation tracking failed between $info{client} and $info{server}| );
+			return;
 		}
-	);
-	if( $dbError || $sth->rows == 0 ) {
-		$kernel->post( $heap->{log} => notice => qq|conversation tracking failed between $info{client} and $info{server}| );
-		return;
+		my $convo = $sth->fetchrow_hashref;
+		%ID = (
+			client_id => $convo->{client_id},
+			server_id => $convo->{server_id},
+			conversation_id => $convo->{id},
+		);
 	}
-	my $convo = $sth->fetchrow_hashref;
-	my %ID = (
-		client_id => $convo->{client_id},
-		server_id => $convo->{server_id},
-		conversation_id => $convo->{id},
-	);
 
 	foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
 		$kernel->post( $plugin_name => process => $dnsp, { %info, %ID } );
