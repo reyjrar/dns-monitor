@@ -79,7 +79,7 @@ Parameters:
 	B<Plugins> is a hash ref for plugin options
 		Defaults to:
 		{
-			'packet::logger'		=> { enable => 1, keep_for => '30 days' },
+			'packet::store'		=> { enable => 1, keep_for => '30 days' },
 			'server::authorized'	=> { enable => 1 },
 			'server::stats'			=> { enable => 1, rrd => 1 },
 			'client::stats'			=> { enable => 1, rrd => 1 },
@@ -98,7 +98,7 @@ sub spawn {
 	# Defaults
 	my %pcapOpts = ( dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 );
 	my %pluginConfig = (
-		'packet::logger'		=> { enable => 1, keep_for => '30 days' },
+		'packet::store'		=> { enable => 1, keep_for => '30 days' },
 		'server::authorized'	=> { enable => 1 },
 		'server::stats'			=> { enable => 1, rrd => 1 },
 		'client::stats'			=> { enable => 1, rrd => 1 },
