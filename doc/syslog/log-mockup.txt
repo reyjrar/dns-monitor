@@ -1,0 +1,11 @@
+Mon  1 00:00:00 dnsmon: type=q time=1313686801.962653 uuid=<uuid> cli=1.2.3.4:4321 srv=4.3.2.1:53 id=65432 op=QUERY qcnt=1 rd=1 tc=0 cd=1 
+Mon  1 00:00:00 dnsmon: type=qr uuid=<uuid> class=IN rtype=A name=www.google.com
+Mon  1 00:00:00 dnsmon: type=a time=1313686801.962653 uuid=<uuid> cli=1.2.3.4:4321 srv=4.3.2.1:53 id=65432 op=QUERY status=NOERROR anscnt=7 addcnt=0 authcnt=0 qcnt=1 rd=1 ra=1 tc=0 cd=1 authn=0 authr=1
+Mon  1 00:00:00 dnsmon: type=ar uuid=<uuid> asect=answer class=IN rtype=CNAME name=www.google.com value=www.l.google.com
+Mon  1 00:00:00 dnsmon: type=ar uuid=<uuid> asect=answer class=IN rtype=A name=www.l.google.com value=74.125.93.104
+Mon  1 00:00:00 dnsmon: type=ar uuid=<uuid> asect=answer class=IN rtype=A name=www.l.google.com value=74.125.93.105
+
+
+Mon  1 00:00:00 dnsmon: type=q time=1313686801.962653 uuid=<uuid> cli=1.2.3.4:4321 srv=4.3.2.1:53 id=65432 op=QUERY qcnt=1 rd=1 tc=0 cd=1 
+Mon  1 00:00:00 dnsmon: type=qr uuid=<uuid> class=IN rtype=A name=www.askfdg.com
+Mon  1 00:00:00 dnsmon: type=a time=1313686801.962653 uuid=<uuid> cli=1.2.3.4:4321 srv=4.3.2.1:53 id=65432 op=QUERY status=NXDOMAIN anscnt=0 addcnt=0 authcnt=1 qcnt=1 rd=1 ra=1 tc=0 cd=1 authn=0 authr=0

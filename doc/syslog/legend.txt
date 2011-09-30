@@ -1,0 +1,130 @@
+Legend for DNS-Monitor Syslog Output
+====================================
+
+Common:
+
+	type=[q,qr,a,ar];
+
+		q=question header information
+		qr=question record
+		a=answer header information
+		ar=answer record
+
+	uuid=uuid
+
+		This will be unique and will link the records from question
+		through answer.  The idea is you can use this to identify a
+		complete transaction.
+
+	flushed=1
+
+		Set if the question has been flushed without an answer
+
+Headers (type=q|a)
+
+	time=0000000000.000000
+
+		HiRes epoch timestamp from libpcap indicating time of capture
+
+	srv=ip:port
+
+		IP Address and Port Number for the Server
+
+	cli=ip:port
+
+		IP Address and Port Number for the Client
+
+	id=serialno
+	
+		DNS Header Serial Number
+
+	op=QUERY
+
+		Operational Code, Possible Values:
+			QUERY,IQUERY,STATUS,NS_NOTIFY_OP,UPDATE
+
+	rd=[0,1]
+
+		Recursion Desired? (Boolean)
+
+	cd=[0,1]
+
+		Checking Desired? (Boolean)
+
+	qcnt=integer
+
+		Number of Question Records Contained
+
+Header (type=a)
+
+	status=NOERROR
+
+		Status of the Query, Possible Values:
+			NOERROR,FORMERR,SERVFAIL,NXDOMAIN,NOTIMP,REFUSED,
+			YXDOMAIN,YXRRSET,NXRRSET,NOTAUTH,NOTZONE	
+
+	size=213
+
+		Size, in bytes of answer
+
+	anscnt=integer
+
+		Number of Answer Records
+
+	addcnt=integer
+
+		Number of Answer Records in the Additional Section
+
+	authcnt=integer
+
+		Number of Answer Records in the Authority Section
+
+	
+
+	ra=[0,1]
+
+		Recursion Avaiable? (Boolean)
+
+	authn=[0,1]
+
+		Answer Authenticated ? (Boolean )
+
+	authr=[0,1]
+
+		Answer Authoritative ? (Boolean )
+	
+
+Records (type=qr|ar)
+
+	class=IN
+
+		Class of Record (IN,HS,CH,NONE,ANY)
+
+	rtype=A
+
+		Record Type (Lots of Possible Values)
+
+	name=www.google.com
+
+		Name of Record Referenced
+
+Records (type=ar)
+
+	sect=ANS
+
+		Section
+		- Answer (ANS)
+		- Authority (AUTH)
+		-Additional (ADD)
+
+	value=1.2.3.4
+
+		Record Value
+
+	opts=10
+
+		In the case of things like MX, this would be the "10" of "IN MX 10 mail.google.com"
+
+	ttl=86400
+
+		Time-to-live for the records
