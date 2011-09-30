@@ -21,7 +21,6 @@ sub spawn {
 	my %args = @_;
 
 	die "Bad Config" if ref $args{Config} ne 'HASH';
-	die "Bad DBH" unless ref $args{DBH};
 	die "No Alias" unless length $args{Alias};
 
 	my $sess = POE::Session->create( inline_states => {
@@ -43,7 +42,6 @@ sub packet_logger_start {
 	
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
-	$heap->{dbh} = $args->{DBH};
 
 	# Set the Config
 	my %cfg = (
