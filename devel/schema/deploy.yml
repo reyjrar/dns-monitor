@@ -151,3 +151,10 @@ upgrade:
           - list_meta_answer
           - list_tracking_client
 
+  20111007:
+    plugins:
+      packet::store:
+        level: 0
+        entities:
+          - packet_store_cleanup
+ 
