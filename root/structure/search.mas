@@ -1,5 +1,5 @@
 <div id="search" class="span-10 ui-helper ui-state-default hide" title="search">
-	<form action="/search" METHOD="POST">
+	<form action="<% $c->uri_for("/search") %>" METHOD="POST">
 		<div class="center span-9 last">
 			<select name="search_type" id="search_type" class="span-7 last">
 				<option value="clients-asking">clients asking</option>

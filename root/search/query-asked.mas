@@ -1,4 +1,5 @@
 <%args>
 	$query
-	$entries
+	$results
 </%args>
+<h1>not yet implemented</h1>
