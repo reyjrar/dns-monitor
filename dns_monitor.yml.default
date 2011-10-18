@@ -3,6 +3,8 @@ name: dns::monitor
 log_cfg: ./conf/logging.conf
 statedir: /var/run/dnsmonitor
 time_zone: America/New_York
+Plugin::Session:
+  storage: /tmp/dnsmon-session 
 rrd: &GLOBALrrd
   dir: ./cache/rrd
   types:
