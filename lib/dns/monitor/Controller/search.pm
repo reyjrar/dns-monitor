@@ -71,6 +71,9 @@ sub clients_asking :Path('clients-asking') :Args(0) {
 		);
 	}
 	my $question = $c->model('db::packet::record::question')->find(\%parameters);
+
+	# Detach if nothing found
+	$c->detach( '/search/nothing_found' ) unless defined $question;
 	
 	my $sth = $c->dbconn->run( fixup => sub {
 		my $sth = $_->prepare(q{
@@ -135,6 +138,11 @@ sub zone_tree :Path('zone-tree') :Args(0) {
 	$c->stash->{template} = '/search/zone-tree.mas';
 }
 
+sub nothing_found :Path('nothing') Args(0) {
+	my ($self,$c) = @_;
+
+	$c->stash->{template} = '/search/nothing.mas';
+}
 
 =head1 AUTHOR
 

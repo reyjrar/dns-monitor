@@ -1,3 +1,4 @@
+cache/*
 cache/**/*
 dns_monitor.yml
 *.log

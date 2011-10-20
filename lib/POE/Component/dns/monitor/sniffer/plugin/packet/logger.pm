@@ -56,7 +56,7 @@ sub packet_logger_start {
 	$heap->{cache} = ();
 
 	# Open the logger
-	openlog( 'dns-monitor', '', $heap->{config}->{facility} );
+	openlog( 'dnsmonitor', '', $heap->{config}->{facility} );
 
 	# Trigger Maintenance
 	$kernel->delay_add( 'maintenance', 60 );
@@ -171,7 +171,7 @@ sub packet_logger_flush_entry {
 		next unless defined $rec;
 
 		my $line = qq{type=$t};
-		$line .= qq{ uuid=$entry->{uuid}} if $heap->{cfg}{log_uuid};
+		$line .= qq{ uuid=$entry->{uuid}} if $heap->{config}{log_uuid};
 		$line .= ' flushed=1' if( exists $entry->{flushed} && $entry->{flushed} );
 
 		if( ref $rec eq 'ARRAY' ) {
