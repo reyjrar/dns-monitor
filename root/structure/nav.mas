@@ -26,11 +26,18 @@ my @menuItems = (
 		items 	=> undef,
 	},
 	{
-		title	=> 'stats',
-		url		=> '#',
+		title	=> 'client',
+		url		=> '/client',
 		items	=> [
-			{ title => 'server stats', url => '/server/stats' },
-			{ title => 'client stats', url => '/client/stats' },
+			{ title => 'overview', url => '/client/overview' },
+			{ title => 'stats', url => '/client/stats' },
+		],
+	},
+	{
+		title	=> 'server',
+		url		=> '/server',
+		items	=> [
+			{ title => 'stats', url => '/server/stats' },
 		],
 	},
 	{

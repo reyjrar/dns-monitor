@@ -1,5 +1,51 @@
 <%args>
 	$query
+	$question
 	$results
 </%args>
-<h1>not yet implemented</h1>
+<h2>Results for '<% $query %>'</h2>
+% if( defined $question ) {
+<h3><% $question->class %> <% $question->type %> <% $question->name %></h3>
+<div class="prepend-1 span-15 last">
+		Query been asked <strong><% $question->reference_count %></strong> times
+		between <strong><% $question->first_ts->strftime('%F %H:%M') %></strong>
+		and <strong><% $question->last_ts->strftime('%F %H:%M') %></strong>.
+</div>
+<hr class="space">
+%	if( defined $results ) {
+<table id="results" class="display">
+<thead>
+  <tr>
+	<th>time</th>
+	<th>client</th>
+	<th>server</th>
+	<th>question</th>
+	<th>recursive</th>
+  </tr>
+</thead>
+<tbody>
+% foreach my $entry ( @{ $results } ) {
+  <tr>
+	<td><% $entry->{query_ts} %></td>
+	<td><% $entry->{cli} %></td>
+	<td><% $entry->{srv} %></td>
+	<td><% $entry->{class} %> <% $entry->{type} %> <% $entry->{name} %></td>
+	<td><% $entry->{recurive} ? 'Y' : 'N' %></td>
+  </tr>
+% } # end foreach rec
+</tbody>
+</table>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#results').dataTable({
+			'bJQueryUI': true,
+			'iDisplayLength': 50,
+			'aaSorting': [ [ 0, 'desc' ] ]
+		});
+	});
+</script>
+% 	} # End if RESULTS
+% } else {
+<h3>No results for '<% $query %>'.</h3>
+% }
+<%method title>search results : query asked</%method>

@@ -129,7 +129,40 @@ sub query_asked :Path('query-asked') :Args(0) {
 	}
 	my $question = $c->model('db::packet::record::question')->find(\%parameters);
 
+	# Detach if nothing found
+	$c->detach( '/search/nothing_found' ) unless defined $question;
+
+	# Search for Queries
+	my $sth = $c->dbconn->run( fixup => sub {
+		my $sth = $_->prepare(q{
+			select
+				c.ip as cli,
+				s.ip as srv,
+				q.query_ts,
+				qs.class, qs.type, qs.name,
+				q.flag_recursive
+			from
+				packet_meta_question mq
+				inner join packet_record_question qs on mq.question_id = qs.id
+				inner join packet_query q on mq.query_id = q.id
+				inner join client c on q.client_id = c.id
+				inner join server s on q.server_id = s.id
+			where
+				mq.question_id = ?
+			order by q.id desc
+				limit 500
+		});
+	});
+
+	my @results = ();
+	$sth->execute( $question->id );
+	while( my $row = $sth->fetchrow_hashref ) {
+		push @results, $row;
+	}
+
 	$c->stash->{template} = '/search/query-asked.mas';
+	$c->stash->{question} = $question;
+	$c->stash->{results} = \@results;
 }
 
 sub zone_tree :Path('zone-tree') :Args(0) {

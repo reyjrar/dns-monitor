@@ -157,4 +157,8 @@ upgrade:
         level: 0
         entities:
           - packet_store_cleanup
+
+  20111202:
+    base:
+      - find_or_create_conversation
  

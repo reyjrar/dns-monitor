@@ -1,1 +1,4 @@
-<h1>No results found.</h1>
+<%args>
+	$query
+</%args>
+<h1>No results found for '<% $query %>'.</h1>
