@@ -4,6 +4,7 @@
 	$results
 </%args>
 <h2>Results for '<% $query %>'</h2>
+% if( defined $question ) {
 <h3><% $question->class %> <% $question->type %> <% $question->name %></h3>
 <div class="prepend-1 span-15 last">
 		Query been asked <strong><% $question->reference_count %></strong> times
@@ -11,6 +12,7 @@
 		and <strong><% $question->last_ts->strftime('%F %H:%M') %></strong>.
 </div>
 <hr class="space">
+%	if( defined $results ) {
 <table id="results" class="display">
 <thead>
   <tr>
@@ -31,4 +33,17 @@
 % } # end foreach rec
 </tbody>
 </table>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#results').dataTable({
+			'bJQueryUI': true,
+			'iDisplayLength': 25,
+			'aaSorting': [ [ 3, 'desc' ] ]
+		});
+	});
+</script>
+% 	} # End if RESULTS
+% } else {
+<h3>No results for '<% $query %>'.</h3>
+% }
 <%method title>search results : clients asking</%method>
