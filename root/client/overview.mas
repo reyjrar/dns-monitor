@@ -1,0 +1,68 @@
+<%args>
+	$networks
+	$total_clients
+</%args>
+<h2>client overview</h2>
+<div class="prepend-1 span-15 last">
+	dns::monitor has seen <strong><% $total_clients %> clients</strong>.
+</div>
+% if ( defined $networks ) {
+<hr class="space"/>
+<div id="plotHolder" class="span-10"></div>
+<hr class="space"/>
+<table id="networkTable" class="display">
+<thead>
+  <tr>
+	<th>network</th>
+	<th>clients</th>
+	<th>first seen</th>
+	<th>last seen</th>
+  </tr>
+</thead>
+<tbody>
+% my %graph = ();
+% my $top = 10;
+% foreach my $net (sort { $b->{clients} <=> $a->{clients} } @{ $networks }) {
+% 	my $container = --$top > 0 ? $net->{network} : 'other';
+%   $graph{$container} += $net->{clients};
+  <tr>
+	<td><% $net->{network} %></td>
+	<td><% $net->{clients} %></td>
+	<td><% $net->{first_ts} %></td>
+	<td><% $net->{last_ts} %></td>
+  </tr>
+% }
+</tbody>
+</table>
+% my @graphData=();
+% foreach my $net ( sort keys %graph ) {
+% 	push @graphData, qq{[ '$net', $graph{$net} ]};
+% }
+<script type="text/javascript" src="<% $c->uri_for('/static/js/jqplot/jqplot.pieRenderer.min.js') %>"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#networkTable').dataTable({
+			'bJQueryUI': true,
+			'iDisplayLength': 25,
+			'aaSorting': [ [ 1, 'desc' ] ]
+		});
+	});
+	var netData = [ <% join(', ', @graphData ) %> ];
+	var pieChart = jQuery.jqplot('plotHolder', [netData], {
+		title:'Total Clients by Network',
+		seriesDefaults:{
+			renderer: jQuery.jqplot.PieRenderer,
+			rendererOptions:{showDataLabels: true}
+		},
+		legend: {
+			show:true,
+			placement:'outside',
+			location:'e',
+			rendererOptions:{numberRows:5},
+			marginLeft: '5px',
+			border:'none'
+		}
+	});
+</script>
+% }
+<%method title>client overview</%method>

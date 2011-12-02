@@ -24,7 +24,43 @@ Catalyst Controller.
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-    $c->response->body('Matched dns::monitor::Controller::client in client.');
+	$c->forward( '/client/overview' );
+}
+
+=head2 overview
+
+Display Client Overview
+
+=cut
+ 
+sub overview :Path('overview') :Args(0) {
+	my ($self,$c) = @_;
+
+	my $sth = $c->dbconn->run( fixup => sub {
+		my $lsh = $_->prepare(q{
+			select
+				CAST(regexp_replace( CAST( ip | inet '0.0.0.255' as TEXT), '255/32$', '0') || '/24' as inet) as network,
+				count(1) as clients,
+				to_char(min(first_ts), 'YYYY-MM-DD HH24:MI') as first_ts,
+				to_char(max(last_ts), 'YYYY-MM-DD HH24:MI') as last_ts,
+				bool_or(is_local) as is_local
+			from client
+			group by ip | inet '0.0.0.255'
+		});
+		$lsh;
+	});
+	$sth->execute();
+
+	my @networks = ();
+	my $total_clients = 0;
+	while( my $row = $sth->fetchrow_hashref ) {
+		push @networks, $row;
+		$total_clients += $row->{clients};
+	}
+
+	$c->stash->{template} = '/client/overview.mas';
+	$c->stash->{networks} = \@networks;
+	$c->stash->{total_clients} = $total_clients;
 }
 
 =head2 stats
