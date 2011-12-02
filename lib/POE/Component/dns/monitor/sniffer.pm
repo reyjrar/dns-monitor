@@ -163,11 +163,6 @@ sub sniffer_start {
 	# Load the Plugins
 	$kernel->yield( 'sniffer_load_plugins' );
 
-	# Caching
-	my %_conv_cache = ();
-	my %_cli_cache = ();
-	my %_srv_cache = ();
-
 	# Configure the Pcap Handler
 	$kernel->post( $heap->{log} => debug => "pcap::open_live : $args->{PcapOpts}{dev}" );
 	$kernel->post( pcap => open_live => @{$args->{PcapOpts}}{qw(dev snaplen promisc timeout)} );
