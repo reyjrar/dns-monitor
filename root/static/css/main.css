@@ -105,6 +105,12 @@ tr.gray td, .gray {
 	padding-left: 3px;
 	padding-right: 3px;
 }
+.dm-graph-pie {
+	float: left;
+	padding: 5px;
+	height: 150px;
+	width: 150px;
+}
 .dm-box {
 	border: 1px solid #ccc;
 }

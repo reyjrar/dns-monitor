@@ -12,7 +12,6 @@
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/blueprint/plugins/sprites/sprite.css') %>"/>
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/superfish.css') %>"/>
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/jquery.dataTables.css') %>"/>
-	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/jquery.jqplot.css') %>"/>
 	<link rel="stylesheet" type="text/css" href="<% $c->uri_for('/static/css/smoothness/jquery.ui.css') %>"/>
 
 	<!-- jQuery UI -->
@@ -23,7 +22,6 @@
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.dataTables.js') %>"></script>
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.superfish.js') %>"></script>
 	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.sparkline.js') %>"></script>
-	<script type="text/javascript" src="<% $c->uri_for('/static/js/jquery.jqplot.js') %>"></script>
 
  </head>
 <body>
