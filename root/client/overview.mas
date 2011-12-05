@@ -8,7 +8,7 @@
 </div>
 % if ( defined $networks ) {
 <hr class="space"/>
-<div id="plotHolder" class="dm-graph-pie"></div><div id="hover" class="span-4 last"></div>
+<div id="plotHolder" style="height: 200px; width: 400px;" class="flot-holder"></div>
 <hr class="space"/>
 <table id="networkTable" class="display">
 <thead>
@@ -49,23 +49,15 @@
 		});
 	});
 	var netData = [ <% join(', ', @graphData ) %> ];
-	var pieChart = $.plot($('#plotHolder'), netData, {
+	$.plot($('#plotHolder'), netData, {
 		series: {
 			pie: {
 				show:true,
 				label: { show:false }
 			},
 		},
-		legend: { show:false },
-		grid: {
-			hoverable:true
-		}
-	});
-	$('#plotHolder').bind('plothover', function(event, pos, obj) {
-		if (!obj) return;
-		percent = parseFloat(obj.series.percent).toFixed(2);
-		$("#hover").html('<span style="font-weight: bold; color: '+obj.series.color
-			+'">'+obj.series.label+' ('+percent+'%)</span>');
+		legend: { show:true },
+		grid: { hoverable:true }
 	});
 </script>
 % }

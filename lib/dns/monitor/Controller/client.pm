@@ -95,6 +95,37 @@ sub stats :Path('stats') :Args(1) {
 	$c->stash->{template} = '/client/stats.mas';
 }
 
+=head2 view 
+
+View a Single Client Statistics
+
+=cut
+
+sub view :Path('view') :Args(1) {
+	my ($self,$c,$id) = @_;
+
+	my $client = $c->model('DB::client')->find( $id );
+
+	if( !defined $client ) {
+		$c->forward('/client/overview');
+		$c->detach();
+	}
+
+	my $stats_rs = $c->model('DB::client::stats')->search(
+		{ client_id => $id },
+		{ order_by => { -asc => 'day' } }
+	);
+
+	if( !defined $stats_rs || $stats_rs->count < 1 ) {
+		$c->forward('/client/overview');
+		$c->detach;
+	}
+
+	$c->stash->{template} = '/client/view.mas';
+	$c->stash->{client} = $client;
+	$c->stash->{stats_rs} = $stats_rs;
+}
+
 =head1 AUTHOR
 
 Brad Lhotsky

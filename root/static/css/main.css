@@ -111,6 +111,7 @@ tr.gray td, .gray {
 	height: 150px;
 	width: 150px;
 }
+.flot-holder table { width: auto; }
 .dm-box {
 	border: 1px solid #ccc;
 }
