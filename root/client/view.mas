@@ -1,0 +1,31 @@
+<%args>
+	$client
+	$stats_rs
+</%args>
+<h3>client details for <% $client->ip %></h3>
+<div id="history" style="height: 300px; width: 600px" class="flot-holder"></div>
+<script type="text/javascript" src="<% $c->uri_for('/static/js/flot/jquery.flot.js') %>"></script>
+<script type="text/javascript">
+<%perl>
+	my %stats = ();
+	my %sums = ();
+	my $idx = 0;
+	while( my $stat = $stats_rs->next ) {
+		push @{ $stats{queries} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->queries . ' ]';
+		push @{ $stats{errors} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->errors . ' ]';
+		push @{ $stats{nx} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->nx . ' ]';
+	}
+</%perl>
+var queries = [ <% join(', ', @{ $stats{queries} }) %> ];
+var errors = [ <% join(', ', @{ $stats{errors} }) %> ];
+var nx = [ <% join(', ', @{ $stats{nx} }) %> ];
+$.plot($('#history'), [
+		{ label:'queries', data:queries },
+		{ label:'errors', data:errors },
+		{ label:'nx', data:nx },
+	], {
+		xaxis: { mode:"time" }
+	}
+);
+</script>
+<%method title>client details</%method>
