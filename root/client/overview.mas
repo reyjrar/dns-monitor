@@ -8,7 +8,7 @@
 </div>
 % if ( defined $networks ) {
 <hr class="space"/>
-<div id="plotHolder" class="span-10"></div>
+<div id="plotHolder" class="dm-graph-pie"></div><div id="hover" class="span-4 last"></div>
 <hr class="space"/>
 <table id="networkTable" class="display">
 <thead>
@@ -36,9 +36,10 @@
 </table>
 % my @graphData=();
 % foreach my $net ( sort keys %graph ) {
-% 	push @graphData, qq{[ '$net', $graph{$net} ]};
+% 	push @graphData, qq|{ label:'$net', data:$graph{$net} }|;
 % }
-<script type="text/javascript" src="<% $c->uri_for('/static/js/jqplot/jqplot.pieRenderer.min.js') %>"></script>
+<script type="text/javascript" src="<% $c->uri_for('/static/js/flot/jquery.flot.js') %>"></script>
+<script type="text/javascript" src="<% $c->uri_for('/static/js/flot/jquery.flot.pie.js') %>"></script>
 <script type="text/javascript">
 	$(document).ready(function() {
 		$('#networkTable').dataTable({
@@ -48,20 +49,23 @@
 		});
 	});
 	var netData = [ <% join(', ', @graphData ) %> ];
-	var pieChart = jQuery.jqplot('plotHolder', [netData], {
-		title:'Total Clients by Network',
-		seriesDefaults:{
-			renderer: jQuery.jqplot.PieRenderer,
-			rendererOptions:{showDataLabels: true}
+	var pieChart = $.plot($('#plotHolder'), netData, {
+		series: {
+			pie: {
+				show:true,
+				label: { show:false }
+			},
 		},
-		legend: {
-			show:true,
-			placement:'outside',
-			location:'e',
-			rendererOptions:{numberRows:5},
-			marginLeft: '5px',
-			border:'none'
+		legend: { show:false },
+		grid: {
+			hoverable:true
 		}
+	});
+	$('#plotHolder').bind('plothover', function(event, pos, obj) {
+		if (!obj) return;
+		percent = parseFloat(obj.series.percent).toFixed(2);
+		$("#hover").html('<span style="font-weight: bold; color: '+obj.series.color
+			+'">'+obj.series.label+' ('+percent+'%)</span>');
 	});
 </script>
 % }
