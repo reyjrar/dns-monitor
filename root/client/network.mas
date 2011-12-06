@@ -1,0 +1,59 @@
+<%args>
+	$network
+	$ips
+	$total_clients
+	$graph_data
+</%args>
+<h2>client network <% $network %>/24</h2>
+<div class="prepend-1 span-15 last">
+	dns::monitor has seen <strong><% $total_clients %> clients in <% $network %>/24</strong>.
+</div>
+% if ( defined $ips ) {
+<hr class="space"/>
+<div id="plotHolder" style="height: 200px; width: 600px;" class="flot-holder"></div>
+<hr class="space"/>
+<table id="networkTable" class="display">
+<thead>
+  <tr>
+	<th>ip</th>
+	<th>queries</th>
+	<th>errors</th>
+	<th>nx</th>
+	<th>first seen</th>
+	<th>last seen</th>
+  </tr>
+</thead>
+<tbody>
+% foreach my $ip (@{ $ips }) {
+  <tr>
+	<td><a href="<% $c->uri_for('/client/view/' . $ip->{id}) %>"><% $ip->{ip} %></a></td>
+	<td><% $ip->{queries} %></td>
+	<td><% $ip->{errors} %></td>
+	<td><% $ip->{nx} %></td>
+	<td><% $ip->{first_day} %></td>
+	<td><% $ip->{last_day} %></td>
+  </tr>
+% }
+</tbody>
+</table>
+<script type="text/javascript" src="<% $c->uri_for('/static/js/flot/jquery.flot.js') %>"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#networkTable').dataTable({
+			'bJQueryUI': true,
+			'iDisplayLength': 25,
+			'aaSorting': [ [ 1, 'desc' ] ]
+		});
+	});
+	var queries = [ <% join(', ', @{ $graph_data->{queries} }) %> ];
+	var errors = [ <% join(', ', @{ $graph_data->{errors} }) %> ];
+	var nx = [ <% join(', ', @{ $graph_data->{nx} }) %> ];
+	$.plot($('#plotHolder'), [
+			{ label:'queries', data:queries },
+			{ label:'errors', data:errors },
+			{ label:'nx', data:nx },
+		],
+		{ xaxis: { mode:"time" } }	);
+</script>
+% }
+<%method title>client network</%method>

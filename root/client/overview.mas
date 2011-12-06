@@ -26,7 +26,7 @@
 % 	my $container = --$top > 0 ? $net->{network} : 'other';
 %   $graph{$container} += $net->{clients};
   <tr>
-	<td><% $net->{network} %></td>
+	<td><a href="<% $c->uri_for('/client/network/' . $net->{network_addr}) %>"><% $net->{network} %></a></td>
 	<td><% $net->{clients} %></td>
 	<td><% $net->{first_ts} %></td>
 	<td><% $net->{last_ts} %></td>

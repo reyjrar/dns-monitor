@@ -1,5 +1,6 @@
 package dns::monitor::Controller::client;
 use Moose;
+use DateTime;
 use namespace::autoclean;
 
 BEGIN {extends 'Catalyst::Controller'; }
@@ -40,9 +41,13 @@ sub overview :Path('overview') :Args(0) {
 		my $lsh = $_->prepare(q{
 			select
 				CAST(regexp_replace( CAST( ip | inet '0.0.0.255' as TEXT), '255/32$', '0') || '/24' as inet) as network,
+				regexp_replace( CAST( ip | inet '0.0.0.255' as TEXT), '255/32$', '0') as network_addr,
 				count(1) as clients,
 				to_char(min(first_ts), 'YYYY-MM-DD HH24:MI') as first_ts,
 				to_char(max(last_ts), 'YYYY-MM-DD HH24:MI') as last_ts,
+				sum(queries) as queries,
+				sum(errors) as errors,
+				sum(nx) as nx,
 				bool_or(is_local) as is_local
 			from client
 			group by ip | inet '0.0.0.255'
@@ -61,6 +66,80 @@ sub overview :Path('overview') :Args(0) {
 	$c->stash->{template} = '/client/overview.mas';
 	$c->stash->{networks} = \@networks;
 	$c->stash->{total_clients} = $total_clients;
+}
+
+=head2 network
+
+Display Client Network Overview
+
+=cut
+ 
+sub network :Path('network') :Args(1) {
+	my ($self,$c,$rawnet) = @_;
+
+	# Strip any non IPv4 / IPv6 Characters
+	$rawnet =~ s/[^0-9A-F:\.]+//g;
+
+	# By Client
+	my $sth = $c->dbconn->run( fixup => sub {
+		my $lsh = $_->prepare(qq{
+			select
+				c.ip,
+				c.id,
+				sum(s.queries) as queries,
+				sum(s.errors) as errors,
+				sum(s.nx) as nx,
+				min(s.day) as first_day,
+				max(s.day) as last_day,
+				bool_or(c.is_local) as is_local
+			from client_stats s
+				inner join client c on s.client_id = c.id
+				where c.ip << inet '$rawnet/24'
+			group by c.id, c.ip
+		});
+		$lsh;
+	});
+	$sth->execute();
+
+	my @ips = ();
+	my $total_clients = 0;
+	while( my $row = $sth->fetchrow_hashref ) {
+		push @ips, $row;
+		$total_clients++;
+	}
+	
+	# Graph Data!
+	my $gsth = $c->dbconn->run( fixup => sub {
+		my $lsh = $_->prepare(qq{
+			select
+				s.day,
+				sum(s.queries) as queries,
+				sum(s.errors) as errors,
+				sum(s.nx) as nx
+			from client_stats s
+				inner join client c on c.id = s.client_id
+				where c.ip << inet '$rawnet/24'
+			group by s.day
+			order by s.day asc
+		});
+		$lsh;
+	});
+	$gsth->execute();
+	my %graph_data = ();
+	while( my $row = $gsth->fetchrow_hashref ) {
+		my ($y,$m,$d) = split /\-/, $row->{day};
+		my $dt = DateTime->new( year => $y, month => $m, day => $d );
+		my $i = $dt->epoch * 1000;
+		push @{ $graph_data{queries} }, qq{ [ $i, $row->{queries} ] };
+		push @{ $graph_data{errors} }, qq{ [ $i, $row->{errors} ] };
+		push @{ $graph_data{nx} }, qq{ [ $i, $row->{nx} ] };
+	}
+
+	$c->stash->{template} = '/client/network.mas';
+	$c->stash->{ips} = \@ips;
+	$c->stash->{total_clients} = $total_clients;
+	$c->stash->{graph_data} = \%graph_data;
+	$c->stash->{network} = $rawnet;
 }
 
 =head2 stats
