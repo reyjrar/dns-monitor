@@ -45,9 +45,6 @@ sub overview :Path('overview') :Args(0) {
 				count(1) as clients,
 				to_char(min(first_ts), 'YYYY-MM-DD HH24:MI') as first_ts,
 				to_char(max(last_ts), 'YYYY-MM-DD HH24:MI') as last_ts,
-				sum(queries) as queries,
-				sum(errors) as errors,
-				sum(nx) as nx,
 				bool_or(is_local) as is_local
 			from client
 			group by ip | inet '0.0.0.255'
