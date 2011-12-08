@@ -83,6 +83,7 @@ sub network :Path('network') :Args(1) {
 			select
 				c.ip,
 				c.id,
+				sum(s.answers) as answers,
 				sum(s.queries) as queries,
 				sum(s.errors) as errors,
 				sum(s.nx) as nx,
@@ -110,6 +111,7 @@ sub network :Path('network') :Args(1) {
 		my $lsh = $_->prepare(qq{
 			select
 				s.day,
+				sum(s.answers) as answers,
 				sum(s.queries) as queries,
 				sum(s.errors) as errors,
 				sum(s.nx) as nx
@@ -127,6 +129,7 @@ sub network :Path('network') :Args(1) {
 		my ($y,$m,$d) = split /\-/, $row->{day};
 		my $dt = DateTime->new( year => $y, month => $m, day => $d );
 		my $i = $dt->epoch * 1000;
+		push @{ $graph_data{answers} }, qq{ [ $i, $row->{answers} ] };
 		push @{ $graph_data{queries} }, qq{ [ $i, $row->{queries} ] };
 		push @{ $graph_data{errors} }, qq{ [ $i, $row->{errors} ] };
 		push @{ $graph_data{nx} }, qq{ [ $i, $row->{nx} ] };
@@ -197,9 +200,29 @@ sub view :Path('view') :Args(1) {
 		$c->detach;
 	}
 
+	my $query_rs = $c->model('DB::packet::meta::question')->search(
+		{ 'query.client_id' => $id },
+		{
+			join => [qw(query question)],
+			select => [
+				'query.server_id',
+				'me.question_id',
+				{ count => 1, -as => 'queries' },
+				{ min => 'query.query_ts', -as => 'first_ts' },
+				{ max => 'query.query_ts', -as => 'last_ts' },
+			],
+			as => [qw(
+				server_id question_id queries first_ts last_ts
+			)],
+			group_by => [qw(query.server_id me.question_id)],
+			rows => 500,
+		},
+	);
+
 	$c->stash->{template} = '/client/view.mas';
 	$c->stash->{client} = $client;
 	$c->stash->{stats_rs} = $stats_rs;
+	$c->stash->{query_rs} = $query_rs;
 }
 
 =head1 AUTHOR
