@@ -83,6 +83,7 @@ sub network :Path('network') :Args(1) {
 			select
 				c.ip,
 				c.id,
+				sum(s.answers) as answers,
 				sum(s.queries) as queries,
 				sum(s.errors) as errors,
 				sum(s.nx) as nx,
@@ -110,6 +111,7 @@ sub network :Path('network') :Args(1) {
 		my $lsh = $_->prepare(qq{
 			select
 				s.day,
+				sum(s.answers) as answers,
 				sum(s.queries) as queries,
 				sum(s.errors) as errors,
 				sum(s.nx) as nx
@@ -127,6 +129,7 @@ sub network :Path('network') :Args(1) {
 		my ($y,$m,$d) = split /\-/, $row->{day};
 		my $dt = DateTime->new( year => $y, month => $m, day => $d );
 		my $i = $dt->epoch * 1000;
+		push @{ $graph_data{answers} }, qq{ [ $i, $row->{answers} ] };
 		push @{ $graph_data{queries} }, qq{ [ $i, $row->{queries} ] };
 		push @{ $graph_data{errors} }, qq{ [ $i, $row->{errors} ] };
 		push @{ $graph_data{nx} }, qq{ [ $i, $row->{nx} ] };

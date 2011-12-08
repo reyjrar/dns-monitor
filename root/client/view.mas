@@ -13,17 +13,20 @@
 	my $idx = 0;
 	while( my $stat = $stats_rs->next ) {
 		push @{ $stats{queries} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->queries . ' ]';
+		push @{ $stats{answers} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->answers . ' ]';
 		push @{ $stats{errors} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->errors . ' ]';
 		push @{ $stats{nx} }, "[ '" . $stat->day->epoch() * 1000 . "', " . $stat->nx . ' ]';
 	}
 </%perl>
 var queries = [ <% join(', ', @{ $stats{queries} }) %> ];
+var answers = [ <% join(', ', @{ $stats{answers} }) %> ];
 var errors = [ <% join(', ', @{ $stats{errors} }) %> ];
 var nx = [ <% join(', ', @{ $stats{nx} }) %> ];
 $.plot($('#history'), [
-		{ label:'queries', data:queries },
-		{ label:'errors', data:errors },
-		{ label:'nx', data:nx },
+		{ label:'queries', color:'#33aaff', data:queries },
+		{ label:'answers', color:'#55ff44', data:answers },
+		{ label:'errors', color:'#ff3333', data:errors },
+		{ label:'nx', color: '#ff9944', data:nx },
 	], {
 		xaxis: { mode:"time" }
 	}
