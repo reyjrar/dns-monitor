@@ -1,6 +1,7 @@
 <%args>
 	$client
 	$stats_rs
+	$query_rs
 </%args>
 <h3>client details for <% $client->ip %></h3>
 <div id="history" style="height: 300px; width: 600px" class="flot-holder"></div>
@@ -28,4 +29,37 @@ $.plot($('#history'), [
 	}
 );
 </script>
+% if ( defined $query_rs ) {
+<h3>Query Log</h3>
+<table id="queryLog" class="display">
+<thead>
+  <tr>
+	<th>Query</th>
+	<th>Count</th>
+	<th>First</th>
+	<th>Last</th>
+  </tr>
+</thead>
+<tbody>
+% while( my $rec = $query_rs->next ) {
+% 	my $q = $c->model('DB::packet::record::question')->find( $rec->get_column('question_id') );
+  <tr>
+	<td><% $q->class %> <% $q->type %> <% $q->name %></td>
+	<td><% $rec->get_column('queries') %></td>
+	<td><% $rec->get_column('first_ts') %></td>
+	<td><% $rec->get_column('last_ts') %></td>
+  </tr>
+% }
+</tbody>
+</table>
+<script type="text/javascript">
+$(document).ready( function() {
+	$('#queryLog').dataTable({
+		'bJQueryUI': true,
+		'iDisplayLength': 25,
+		'aaSorting': [ [ 1, 'desc' ] ]
+	});
+});
+</script>
+% }
 <%method title>client details</%method>

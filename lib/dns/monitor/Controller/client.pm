@@ -197,9 +197,29 @@ sub view :Path('view') :Args(1) {
 		$c->detach;
 	}
 
+	my $query_rs = $c->model('DB::packet::meta::question')->search(
+		{ 'query.client_id' => $id },
+		{
+			join => [qw(query question)],
+			select => [
+				'query.server_id',
+				'me.question_id',
+				{ count => 1, -as => 'queries' },
+				{ min => 'query.query_ts', -as => 'first_ts' },
+				{ max => 'query.query_ts', -as => 'last_ts' },
+			],
+			as => [qw(
+				server_id question_id queries first_ts last_ts
+			)],
+			group_by => [qw(query.server_id me.question_id)],
+			rows => 500,
+		},
+	);
+
 	$c->stash->{template} = '/client/view.mas';
 	$c->stash->{client} = $client;
 	$c->stash->{stats_rs} = $stats_rs;
+	$c->stash->{query_rs} = $query_rs;
 }
 
 =head1 AUTHOR
