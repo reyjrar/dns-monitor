@@ -50,14 +50,14 @@ sub analyze {
 
 	my $check_ts = DateTime->now()->subtract( seconds => $heap->{interval} );
 	my %SQL = ( 
-		'check' => q{select z.id as zone_id, l.id as list_entry_id
+		'check' => q{select z.id as zone_id, l.id as list_entry_id, l.list_id as list_id
 						from list_entry l
 							inner join zone z on z.path <@ l.path
 		},
 		'check_answer' => q{select answer_id from zone_answer where zone_id = ?},
 		'check_question' => q{select question_id from zone_question where zone_id = ?},
-		'insert_answer'		=> q{insert into list_meta_answer ( answer_id, list_entry_id ) values ( ?, ? )},
-		'insert_question'	=> q{insert into list_meta_question ( question_id, list_entry_id ) values ( ?, ? )},
+		'insert_answer'		=> q{insert into list_meta_answer ( answer_id, list_entry_id, list_id ) values ( ?, ?, ? )},
+		'insert_question'	=> q{insert into list_meta_question ( question_id, list_entry_id, list_id ) values ( ?, ?, ? )},
 		'refresh_check' => q{select id from list
 								where can_refresh = true
 									and NOW() - refresh_last_ts > refresh_every
@@ -80,7 +80,7 @@ sub analyze {
 			while ( my ($id) = $STH{"check_$type"}->fetchrow_array ) {
 				$updates++;
 				try {
-					$STH{"insert_$type"}->execute( $id, $ent->{list_entry_id} );
+					$STH{"insert_$type"}->execute( $id, $ent->{list_entry_id}, $ent->{list_id} );
 				} catch {
 					# update not necessary
 					$updates--;

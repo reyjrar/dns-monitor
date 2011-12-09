@@ -161,4 +161,11 @@ upgrade:
   20111202:
     base:
       - find_or_create_conversation
- 
+
+  20111209:
+     plugins:
+      list::meta:
+        level: 0
+        entities:
+          - list_meta_question
+          - list_meta_answer

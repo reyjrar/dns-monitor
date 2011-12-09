@@ -112,4 +112,10 @@ __PACKAGE__->has_many('meta', 'dns::monitor::Schema::Result::packet::meta::quest
 );
 __PACKAGE__->many_to_many('queries' => 'meta', 'query' );
 
+# Many-to-Many Lists:
+__PACKAGE__->has_many( 'list_meta', 'dns::monitor::Schema::Result::list::meta::question',
+	{ 'foreign.question_id' => 'self.id' }
+);
+__PACKAGE__->many_to_many('lists' => 'list_meta', 'list' );
+
 1;
