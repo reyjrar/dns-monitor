@@ -125,10 +125,18 @@ __PACKAGE__->add_unique_constraint(
 # Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-08-14 11:34:57
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dJ6jD57smhIz2v33dL93lw
 
+#========================================================================#
 # Relationships
+# Many-to-Many responses:
 __PACKAGE__->has_many( 'meta', 'dns::monitor::Schema::Result::packet::meta::answer',
 	{ 'foreign.answer_id' => 'self.id' }
 );
 __PACKAGE__->many_to_many('responses' => 'meta', 'response' );
+
+# Many-to-Many Lists:
+__PACKAGE__->has_many( 'list_meta', 'dns::monitor::Schema::Result::list::meta::answer',
+	{ 'foreign.answer_id' => 'self.id' }
+);
+__PACKAGE__->many_to_many('lists' => 'list_meta', 'list' );
 
 1;

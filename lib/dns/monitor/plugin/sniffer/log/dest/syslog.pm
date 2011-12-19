@@ -5,6 +5,13 @@ use Sys::Syslog;
 
 extends 'dns::monitor::plugin::sniffer::log';
 
+has facility => (
+);
+
+has priority => (
+);
+
+
 after START => sub {
 	my ($self) = @_[OBJECT];
 
