@@ -17,11 +17,11 @@ use Exception::Class::DBI;
 use Catalyst qw/
     ConfigLoader
     Static::Simple
-	StackTrace
-	
-	Session
-	Session::Store::FastMmap
-	Session::State::Cookie
+    StackTrace
+    
+    Session
+    Session::Store::FastMmap
+    Session::State::Cookie
 /;
 
 extends 'Catalyst';
@@ -42,8 +42,8 @@ __PACKAGE__->config(
     name => 'dns::monitor',
     # Disable deprecated behavior needed by old applications
     disable_component_resolution_regex_fallback => 1,
-	default_view => 'Mason',
-	time_zone => 'America/New_York',
+    default_view => 'Mason',
+    time_zone => 'America/New_York',
 );
 
 # Start the application
@@ -51,17 +51,17 @@ __PACKAGE__->setup();
 
 
 has dbconn => ( is => 'ro', lazy => 1, default => sub {
-		DBIx::Connector->new(
-			__PACKAGE__->config->{db}{dsn},
-			__PACKAGE__->config->{db}{user},
-			__PACKAGE__->config->{db}{pass},
-		{
-			PrintError => 0,
-			RaiseError => 0,
-			HandleError => Exception::Class::DBI->handler,
-			AutoCommit => 1,
-			pg_enable_utf8 => 1,
-		});
+        DBIx::Connector->new(
+            __PACKAGE__->config->{db}{dsn},
+            __PACKAGE__->config->{db}{user},
+            __PACKAGE__->config->{db}{pass},
+        {
+            PrintError => 0,
+            RaiseError => 0,
+            HandleError => Exception::Class::DBI->handler,
+            AutoCommit => 1,
+            pg_enable_utf8 => 1,
+        });
 });
 
 =head1 NAME
