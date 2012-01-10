@@ -59,7 +59,7 @@ my %SQL = (
         update list_entry set refreshed = true, last_ts = NOW() where id = ?
     },
     insert_entry => q{
-        insert into list_entry ( list_id, zone, path, refreshed ) values ( ?, ?, ?, true )
+        insert into list_entry ( list_id, zone, path, refreshed ) values ( ?, ?, ?, 1 )
     },
     list_update_refresh => q{
         update list set refresh_last_ts = NOW() where id = ?
