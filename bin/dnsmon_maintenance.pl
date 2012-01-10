@@ -69,7 +69,7 @@ foreach my $plugin (sort keys %{ $CFG->{plugins} } ) {
 	print "preparing '$sql' with arg '$keep_for' .." unless $OPT{q};
 	my $sth = $dbh->prepare( $sql, {pg_async => PG_ASYNC} );
 
-	try { 
+	try {
 		$sth->execute( $keep_for );
 	} catch {
 		print "error cleaning up: ($_)" unless $OPT{q};

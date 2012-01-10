@@ -59,12 +59,12 @@ my %SQL = (
         update list_entry set refreshed = true, last_ts = NOW() where id = ?
     },
     insert_entry => q{
-        insert into list_entry ( list_id, zone, path, refreshed ) values ( ?, ?, ?, 1 )
+        insert into list_entry ( list_id, "zone", path, refreshed ) values ( ?, ?, ?, true )
     },
     list_update_refresh => q{
         update list set refresh_last_ts = NOW() where id = ?
     },
-    clear_state_entries => q{
+    clear_stale_entries => q{
         delete from list_entry where list_id = ? and refreshed is false
     },
 );
@@ -101,6 +101,7 @@ while( my $list = $STH{list}->fetchrow_hashref ) {
         }
         else {
             my $path = join('.', reverse split /\./, $zone );
+            $path =~ s/\-/_/g;
             $STH{insert_entry}->execute( $list->{id}, $zone, $path );
         }
     }
