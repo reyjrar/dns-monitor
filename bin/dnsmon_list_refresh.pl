@@ -11,6 +11,7 @@ use FindBin;
 use DBI;
 use DBD::Pg qw(:async);
 use Try::Tiny;
+use LWP::Simple;
 use Getopt::Std;
 
 # File name processing
