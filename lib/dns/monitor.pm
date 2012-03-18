@@ -18,7 +18,7 @@ use Catalyst qw/
     ConfigLoader
     Static::Simple
     StackTrace
-    
+
     Session
     Session::Store::FastMmap
     Session::State::Cookie
@@ -48,7 +48,6 @@ __PACKAGE__->config(
 
 # Start the application
 __PACKAGE__->setup();
-
 
 has dbconn => ( is => 'ro', lazy => 1, default => sub {
         DBIx::Connector->new(
