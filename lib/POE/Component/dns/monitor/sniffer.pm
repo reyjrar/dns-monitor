@@ -15,7 +15,11 @@ use NetPacket::UDP;
 use NetPacket::TCP;
 use Net::DNS::Packet;
 # Handle Loading Plugins
-use Module::Pluggable require => 1, search_path => [ 'POE::Component::dns::monitor::sniffer::plugin' ];
+use Module::Pluggable   require     => 1,
+                        search_path => [qw(
+                            POE::Component::dns::monitor::sniffer::plugin
+                            POE::Component::dns::monitor::feature
+                        )];
 use Try::Tiny;
 
 # POE
@@ -45,6 +49,7 @@ our $VERSION = '0.02';
             LogSID      => 'log',               # Default
             PcapOpts    => \%pcapOpts,          # See below for details
             Plugins     => \%pluginConfig,      # See below for details
+            Features    => \%featureConfig,     # See below for details
     );
 
 =head1 EXPORT
@@ -76,6 +81,9 @@ Parameters:
         {
             'packet::store'     => { enable => 1, keep_for => '30 days' },
         }
+
+    B<Features> is a hash ref for feature configs, default is none
+
 =cut
 
 sub spawn {
@@ -140,6 +148,7 @@ sub sniffer_start {
 
     # Store the Args in the Heap
     $heap->{_config} = $args->{Config};
+    $heap->{_features} = $args->{Features};
     $heap->{dbh} = $args->{DBH};
     $heap->{log} = $args->{LogSID};
     $heap->{_plugins} = $args->{Plugins};
@@ -166,44 +175,95 @@ sub sniffer_start {
 sub sniffer_load_plugins {
     my ($self,$kernel,$heap) = @_[OBJECT,KERNEL,HEAP];
 
-    my %loadedPlugins = ();
-    my $charsToStrip = length('POE::Component::dns::monitor::sniffer::plugin::');
+    my %plugins=();
+    my %features=();
     foreach my $plugin ( __PACKAGE__->plugins ) {
-        my $name = substr($plugin, $charsToStrip );
-        $kernel->post( $heap->{log} => debug => "found plugin: $name" );
-        # Check for plugin configuration
-        if( !exists $heap->{_plugins}{$name} || ref $heap->{_plugins}{$name} ne 'HASH' ) {
-            $kernel->post( $heap->{log} => notice => "plugin::$name : no configuration, skipping" );
-            next;
-        }
-        # Store the config in a shorter variable
-        my $pluginConf = $heap->{_plugins}{$name};
+        my $name;
+        if(($name) = ($plugin =~ /::plugin::(.*)$/) ) {
+            $kernel->post( $heap->{log} => debug => "found plugin: $name" );
+            # Check for plugin configuration
+            if( !exists $heap->{_plugins}{$name} || ref $heap->{_plugins}{$name} ne 'HASH' ) {
+                $kernel->post( $heap->{log} => notice => "plugin::$name : no configuration, skipping" );
+                next;
+            }
+            # Store the config in a shorter variable
+            my $pluginConf = $heap->{_plugins}{$name};
 
-        # Check to ensure the plugin is enabled
-        if( !exists $pluginConf->{enable} || $pluginConf->{enable} != 1 ) {
-            $kernel->post( $heap->{log} => notice => "plugin::$name : disabled skipping" );
-            next;
-        }
+            # Check to ensure the plugin is enabled
+            if( !exists $pluginConf->{enable} || $pluginConf->{enable} != 1 ) {
+                $kernel->post( $heap->{log} => notice => "plugin::$name : disabled skipping" );
+                next;
+            }
 
-        if( !$plugin->can('spawn') || !$plugin->can('process') ) {
-            $kernel->post( $heap->{log} => notice => "plugin::$name : API Failure, skipping" );
-            next;
-        }
-        $kernel->post( $heap->{log} => debug => "plugin::$name : attempting to bootstrap" );
+            if( !$plugin->can('spawn') || !$plugin->can('process') ) {
+                $kernel->post( $heap->{log} => notice => "plugin::$name : API Failure, skipping" );
+                next;
+            }
+            $kernel->post( $heap->{log} => debug => "plugin::$name : attempting to bootstrap" );
 
-        try {
-            $loadedPlugins{$name} = $plugin->spawn(
-                Alias => $name,
-                Config => $pluginConf,
-                DBH => $heap->{dbh},
-                LogSID => $heap->{log},
-            );
-        } catch {
-            $kernel->post( $heap->{log} => warning => "plugin::$name : unable to spawn: $_" );
-        };
+            try {
+                $plugins{$name} = $plugin->spawn(
+                    Alias => $name,
+                    Config => $pluginConf,
+                    DBH => $heap->{dbh},
+                    LogSID => $heap->{log},
+                );
+            } catch {
+                $kernel->post( $heap->{log} => warning => "plugin::$name : unable to spawn: $_" );
+            };
+        }
+        elsif(($name) = ($plugin =~ /::feature::(.*)$/) ) {
+            # Load a feature
+            $kernel->post( $heap->{log} => debug => "found feature: $name" );
+            # Check for plugin configuration
+            if( !exists $heap->{_features}{$name} || ref $heap->{_features}{$name} ne 'HASH' ) {
+                $kernel->post( $heap->{log} => notice => "feature::$name : no configuration, skipping" );
+                next;
+            }
+            # Store the config in a shorter variable
+            my $featureConf = $heap->{_features}{$name};
+
+            # Check to ensure the plugin is enabled
+            if( !exists $featureConf->{enable} || $featureConf->{enable} != 1 ) {
+                $kernel->post( $heap->{log} => notice => "feature::$name : disabled skipping" );
+                next;
+            }
+
+            if( !$plugin->can('spawn') || !$plugin->can('provides') ) {
+                $kernel->post( $heap->{log} => notice => "feature::$name : API Failure, skipping" );
+                next;
+            }
+            $kernel->post( $heap->{log} => debug => "feature::$name : attempting to bootstrap" );
+
+            my ($feature, $error);
+            try {
+                $feature = $plugin->provides;
+                $features{$feature} = $plugin->spawn(
+                    Alias => $feature,
+                    Config => $featureConf,
+                    LogSID => $heap->{log},
+                );
+            } catch {
+                $error++;
+                $kernel->post( $heap->{log} => warning => "feature::$name : unable to spawn: $_" );
+            };
+            if( $error ) {
+                delete $features{$feature} if defined $features{$feature};
+                undef $feature;
+            }
+            else {
+                $kernel->post( $heap->{log} => debug => "feature::$name providing $feature loaded" );
+            }
+        }
     }
-    $heap->{_loaded_plugins} = \%loadedPlugins;
-    $kernel->post( $heap->{log} => notice => "plugins loaded: " . join(', ', sort keys %loadedPlugins) );
+    $heap->{_loaded_plugins} = \%plugins;
+    my $totalPlugins = scalar keys %plugins;
+    if( $totalPlugins < 1 ) {
+        $kernel->call( $heap->{log} => error => "Did not load any plugins, so exiting!" );
+        $kernel->yield('_stop');
+        exit 1;
+    }
+    $kernel->post( $heap->{log} => notice => "plugins loaded: " . join(', ', sort keys %plugins) );
 }
 
 #------------------------------------------------------------------------#

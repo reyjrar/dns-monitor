@@ -20,6 +20,7 @@ use File::Basename;
 # Config Parsing
 use YAML;
 # Other Essentials
+use Try::Tiny;
 use DBIx::Connector;
 use Daemon::Daemonize qw( check_pidfile write_pidfile daemonize );
 # POE Environment
@@ -77,9 +78,11 @@ $SIG{INT} = sub { exit };
 # Connect to the Database:
 my $dbConn = undef;
 if( exists $CFG->{db} && ref $CFG->{db} eq 'HASH' ) {
-    $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
-        { RaiseError => 0 }
-    );
+    try {
+        $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
+            { RaiseError => 0 }
+        );
+    };
 }
 
 #------------------------------------------------------------------------#
@@ -95,9 +98,10 @@ POE::Component::Logger->spawn(
 #
 # Start Packet Capturing
 POE::Component::dns::monitor::sniffer->spawn(
-    Config  => $configFile,
-    DBH => $dbConn,
-    Plugins => $CFG->{plugins},
+    Config   => $configFile,
+    DBH      => $dbConn,
+    Plugins  => $CFG->{plugins},
+    Features => $CFG->{features},
     PcapOpts => $CFG->{pcap},
 );
 

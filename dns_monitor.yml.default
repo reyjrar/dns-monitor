@@ -6,12 +6,14 @@ time_zone: America/New_York
 Plugin::Session:
   storage: /tmp/dnsmon-session
 
-graphite:
-  server: localhost
-  port: 2003
-  proto: tcp
-  prefix: dns
-  url: http://localhost/render
+features:
+  graphite:
+    enable: 1
+    server: localhost
+    port: 2003
+    proto: tcp
+    prefix: dns
+    url: http://localhost/render
 
 network:
   nameservers: &GLOBALnameservers
