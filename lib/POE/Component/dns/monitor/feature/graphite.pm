@@ -28,6 +28,9 @@ sub spawn {
 sub graphite_start {
     my ($kernel,$heap,$args) = @_[KERNEL,HEAP,ARG0];
 
+    # Set the alias to our "provides"
+    $kernel->alias_set( __PACKAGE__->provides() );
+
     # Parse configuration
     my %cfg = (
         interval => 60,
