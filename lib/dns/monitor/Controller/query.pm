@@ -25,23 +25,23 @@ Catalyst Controller.
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-	my $from = DateTime->now(time_zone => $c->config->{time_zone})->subtract( days => 1 );
-	
-	$c->stash->{new_rs} = $c->model('DB::packet::record::question')->search(
-		{ first_ts => { '>', $from }, reference_count => { '>' => 1}  },
-		{
-	#		order_by => { -desc=> 'first_ts' },
-		},
-	);
+    my $from = DateTime->now(time_zone => $c->config->{time_zone})->subtract( days => 1 );
 
-	$c->stash->{most_asked_rs} = $c->model('DB::packet::record::question')->search(
-		{ last_ts => { '>', $from } },
-		{
-			order_by => { -desc=> 'reference_count' },
-			rows => 500,
-		},
-	);
-	$c->stash->{template} = '/query/index.mas';
+    $c->stash->{new_rs} = $c->model('DB::packet::record::question')->search(
+        { first_ts => { '>', $from }, reference_count => { '>' => 1}  },
+        {
+    #       order_by => { -desc=> 'first_ts' },
+        },
+    );
+
+    $c->stash->{most_asked_rs} = $c->model('DB::packet::record::question')->search(
+        { last_ts => { '>', $from } },
+        {
+            order_by => { -desc=> 'reference_count' },
+            rows => 500,
+        },
+    );
+    $c->stash->{template} = '/query/index.mas';
 }
 
 
