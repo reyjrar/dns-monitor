@@ -239,7 +239,6 @@ sub sniffer_load_plugins {
             try {
                 $feature = $plugin->provides;
                 $features{$feature} = $plugin->spawn(
-                    Alias => $feature,
                     Config => $featureConf,
                     LogSID => $heap->{log},
                 );

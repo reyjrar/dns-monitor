@@ -35,12 +35,13 @@ sub graphite_start {
     my %cfg = (
         interval => 60,
         prefix   => 'dns',
-        %$args
+        %{ $args->{Config} }
     );
     # Set configuration
     $heap->{_cfg} = \%cfg;
 
     # Initialize some stuff
+    $heap->{log} = $args->{LogSID};
     $heap->{_store} = {};
     $heap->{_cached} = {};
 
