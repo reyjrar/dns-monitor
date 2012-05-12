@@ -1,4 +1,0 @@
-<%method title>dns::monitor utilities</%method>
-<ul>
-	<li><a href="<% $c->uri_for('/utility/reverse') %>" alt="fake reverses">reverse through forwards</a></li>
-</ul>

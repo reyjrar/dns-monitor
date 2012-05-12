@@ -3,8 +3,10 @@ use strict;
 use warnings;
 use Test::More;
 
-BEGIN { use_ok 'Catalyst::Test', 'dns::monitor' }
+BEGIN {
+    use_ok 'POE::Component::dns::monitor::sniffer', 'dns::monitor::sniffer';
+    use_ok 'POE::Component::dns::monitor::analysis', 'dns::monitor:analysis';
+}
 
-ok( request('/')->is_success, 'Request should succeed' );
 
 done_testing();
