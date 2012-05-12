@@ -33,13 +33,6 @@ sub sniffer :Path('sniffer') :Args(0) {
     my ($self, $c) = @_;
 
     # Find Plugin Graphs
-    my $rrd_base = $c->config->{rrd}{dir};
-    if( ! File::Spec->file_name_is_absolute( $rrd_base ) ) {
-        $rrd_base = $c->path_to( $rrd_base )->absolute->stringify;
-    }
-    my $plugin_dir = File::Spec->catdir( $rrd_base, qw(sniffer plugin) );
-    my @plugins = ();
-
     foreach my $rrd ( File::Find::Rule->file()->name('*.rrd')->in( $plugin_dir ) ) {
         my ($name) = ($rrd =~ m|plugin/(.*)\.rrd|);
         push @plugins, $name;

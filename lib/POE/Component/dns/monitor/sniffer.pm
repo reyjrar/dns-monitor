@@ -21,8 +21,6 @@ use Try::Tiny;
 # POE
 use POE qw( Component::Pcap );
 
-use dns::monitor::rrd;
-
 =head1 NAME
 
 POE::Component::dns::monitor::sniffer - Passive DNS Monitoring
@@ -46,7 +44,6 @@ our $VERSION = '0.02';
             DBH         => $dbh,                # Required
             LogSID      => 'log',               # Default
             PcapOpts    => \%pcapOpts,          # See below for details
-            RRDOpts     => \%rrdOpts            # See below for details
             Plugins     => \%pluginConfig,      # See below for details
     );
 
@@ -74,15 +71,10 @@ Parameters:
             { dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 }
         You should really send something more interesting than that
 
-    B<RRDOpts> is a hash ref for basic RRD Configuration Options
-
     B<Plugins> is a hash ref for plugin options
         Defaults to:
         {
             'packet::store'     => { enable => 1, keep_for => '30 days' },
-            'server::authorized'    => { enable => 1 },
-            'server::stats'         => { enable => 1, rrd => 1 },
-            'client::stats'         => { enable => 1, rrd => 1 },
         }
 =cut
 
@@ -99,9 +91,6 @@ sub spawn {
     my %pcapOpts = ( dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 );
     my %pluginConfig = (
         'packet::store'     => { enable => 1, keep_for => '30 days' },
-        'server::authorized'    => { enable => 1 },
-        'server::stats'         => { enable => 1, rrd => 1 },
-        'client::stats'         => { enable => 1, rrd => 1 },
     );
     # Hashify
     foreach my $hashOpt(qw( Plugins PcapOpts ) ) {
@@ -129,10 +118,10 @@ sub spawn {
     );
 
     # Configure the Sniffer Session
-    my $session_id = POE::Session->create( 
+    my $session_id = POE::Session->create(
         inline_states => {
             _start  => sub { $poe_kernel->yield( 'sniffer_start' => \%args ) },
-            _stop   => sub {} , 
+            _stop   => sub {} ,
             _child  => \&sniffer_handle_sigchld,
             sniffer_start           => \&sniffer_start,
             sniffer_load_plugins    => \&sniffer_load_plugins,
@@ -153,7 +142,6 @@ sub sniffer_start {
     $heap->{_config} = $args->{Config};
     $heap->{dbh} = $args->{DBH};
     $heap->{log} = $args->{LogSID};
-    $heap->{_rrd} = $args->{RRDOpts};
     $heap->{_plugins} = $args->{Plugins};
     $heap->{_pcap} = $args->{PcapOpts};
 
@@ -170,15 +158,6 @@ sub sniffer_start {
     $kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
         if exists $args->{PcapOpts}{filter} && length $args->{PcapOpts}{filter};
     $kernel->call( pcap => 'run' );
-
-
-    # RRD Tracking Performance
-    $heap->{sniffer_rrd} = dns::monitor::rrd->new( 'sniffer',
-        RootDir => $heap->{_rrd}{dir},
-        DataSources => {
-            count => q{GAUGE 120 0 U},
-        },
-    );
 
     # Initialize Statistics Engine
     $kernel->yield('sniffer_stats');
@@ -368,8 +347,8 @@ sub sniffer_stats {
     );
     foreach my $stat ( @tracked ) {
         my @path = split /\:\:/, $stat;
-        my $rrd = $heap->{sniffer_rrd}->find_or_create( \@path );
-        $rrd->update( { count => exists $stats->{$stat} ? $stats->{$stat} : 0 } );
+        #$rrd->update( { count => exists $stats->{$stat} ? $stats->{$stat} : 0 } );
+        # TODO: Replace this with graphite bindings
     }
 
     # Redo Stats Event

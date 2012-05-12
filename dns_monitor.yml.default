@@ -4,21 +4,14 @@ log_cfg: ./conf/logging.conf
 statedir: /var/run/dnsmonitor
 time_zone: America/New_York
 Plugin::Session:
-  storage: /tmp/dnsmon-session 
-rrd: &GLOBALrrd
-  dir: ./cache/rrd
-  types:
-    A: 00B554
-    CNAME: 4797CA
-    MX: 749EB5
-    PTR: F29D00
-    TXT: 4f5444
-    SRV: F26300
-    default: C9424C 
-  rcodes:
-    NOERROR: 00B554
-    NXDOMAIN: C11700
-    default: C9424C
+  storage: /tmp/dnsmon-session
+
+graphite:
+  server: localhost
+  port: 2003
+  proto: tcp
+  prefix: dns
+  url: http://localhost/render
 
 network:
   nameservers: &GLOBALnameservers
@@ -59,10 +52,6 @@ plugins:
     enable: 1
     interval: 3600
     authorized: *GLOBALnameservers
-
-  packet::rrd:
-    enable: 0
-    <<: *GLOBALrrd
 
   packet::logger:
     enabled: 0

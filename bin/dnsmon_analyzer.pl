@@ -21,30 +21,29 @@ use DBIx::Connector;
 use Daemon::Daemonize qw( check_pidfile write_pidfile daemonize );
 # POE Environment
 use lib "$FindBin::Bin/../lib";
-sub POE::Kernel::ASSERT_DEFAULT () { 1 } 
-sub POE::Kernel::TRACE_DEFAULT () { 0 } 
+sub POE::Kernel::ASSERT_DEFAULT () { 1 }
+sub POE::Kernel::TRACE_DEFAULT () { 0 }
 use EV;
 use POE qw(
-	Component::Logger
-	Component::dns::monitor::analysis
+    Component::Logger
+    Component::dns::monitor::analysis
 );
 
 #------------------------------------------------------------------------#
 # Argument handling
 my %OPTS=();
 getopts('d',\%OPTS);
- 
+
 #------------------------------------------------------------------------#
 # Locate all the necessary directories
 my @BasePath = File::Spec->splitdir( $FindBin::Bin );
 pop @BasePath;
 my %DIRS = (
-	'base'	=> File::Spec->catdir( @BasePath ),
-	'lib'	=> File::Spec->catdir( @BasePath, 'lib' ),
-	'etc'	=> File::Spec->catdir( @BasePath, 'conf' ),
-	'cache'	=> File::Spec->catdir( @BasePath, 'cache' ),
-	'db'	=> File::Spec->catdir( @BasePath, 'cache', 'db' ),
-	'rrd'	=> File::Spec->catdir( @BasePath, 'cache', 'rrd' ),
+    'base'  => File::Spec->catdir( @BasePath ),
+    'lib'   => File::Spec->catdir( @BasePath, 'lib' ),
+    'etc'   => File::Spec->catdir( @BasePath, 'conf' ),
+    'cache' => File::Spec->catdir( @BasePath, 'cache' ),
+    'db'    => File::Spec->catdir( @BasePath, 'cache', 'db' ),
 );
 
 #------------------------------------------------------------------------#
@@ -55,24 +54,24 @@ $DIRS{state} = $CFG->{statedir};
 
 # Daemonize
 if( !$OPTS{d} ) {
-	my $base = basename $0;
-	mkdir $DIRS{state}, 0755 unless -d $DIRS{state};
-	my $PIDFILE = File::Spec->catfile( $DIRS{state}, $base . '.pid' );
+    my $base = basename $0;
+    mkdir $DIRS{state}, 0755 unless -d $DIRS{state};
+    my $PIDFILE = File::Spec->catfile( $DIRS{state}, $base . '.pid' );
 
-	my $pid = check_pidfile( $PIDFILE );
-	if( $pid > 0 ) {
-		warn "$base - another process is currently running ($pid)\n";
-		exit 1;
-	}
-	
-	daemonize( chdir => $DIRS{base}, close => 'std' );
-	write_pidfile( $PIDFILE );
-	$poe_kernel->has_forked();
+    my $pid = check_pidfile( $PIDFILE );
+    if( $pid > 0 ) {
+        warn "$base - another process is currently running ($pid)\n";
+        exit 1;
+    }
+    
+    daemonize( chdir => $DIRS{base}, close => 'std' );
+    write_pidfile( $PIDFILE );
+    $poe_kernel->has_forked();
 }
 
 # Connect to the Database:
 my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
-	{ RaiseError => 0, PrintError => 0 } );
+    { RaiseError => 0, PrintError => 0 } );
 
 #------------------------------------------------------------------------#
 # POE Environment Setup
@@ -81,16 +80,16 @@ my $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}
 #
 # Setup the Logger
 POE::Component::Logger->spawn(
-	Alias		=> 'log',
-	ConfigFile	=> $CFG->{log_cfg},
+    Alias       => 'log',
+    ConfigFile  => $CFG->{log_cfg},
 );
 
 #
 # Start Packet Capturing
 POE::Component::dns::monitor::analysis->spawn(
-	Config	=> $configFile,
-	DBH => $dbConn,
-	Plugins => $CFG->{plugins},
+    Config  => $configFile,
+    DBH => $dbConn,
+    Plugins => $CFG->{plugins},
 );
 
 #------------------------------------------------------------------------#

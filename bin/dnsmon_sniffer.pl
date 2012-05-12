@@ -45,7 +45,6 @@ my %DIRS = (
     'etc'   => File::Spec->catdir( @BasePath, 'conf' ),
     'cache' => File::Spec->catdir( @BasePath, 'cache' ),
     'db'    => File::Spec->catdir( @BasePath, 'cache', 'db' ),
-    'rrd'   => File::Spec->catdir( @BasePath, 'cache', 'rrd' ),
 );
 
 #------------------------------------------------------------------------#
@@ -100,7 +99,6 @@ POE::Component::dns::monitor::sniffer->spawn(
     DBH => $dbConn,
     Plugins => $CFG->{plugins},
     PcapOpts => $CFG->{pcap},
-    RRDOpts => $CFG->{rrd},
 );
 
 #------------------------------------------------------------------------#
