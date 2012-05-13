@@ -104,7 +104,7 @@ sub graphite_send {
 
     # Send or cache the updates
     if( defined $socket && $socket->connected ) {
-        $socket->send( map { "$_\n" } @updates );
+        $socket->send( join '', map { "$_\n" } @updates );
     }
     else {
         push @{ $heap->{_cached} }, \@updates;
