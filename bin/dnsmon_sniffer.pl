@@ -80,7 +80,7 @@ my $dbConn = undef;
 if( exists $CFG->{db} && ref $CFG->{db} eq 'HASH' ) {
     try {
         $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
-            { RaiseError => 0 }
+            { RaiseError => 1 }
         );
     };
 }
