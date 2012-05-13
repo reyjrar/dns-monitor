@@ -9,9 +9,9 @@ Plugin::Session:
 features:
   graphite:
     enable: 1
-    server: localhost
-    port: 2003
-    proto: tcp
+    carbon_server: localhost
+    carbon_port: 2003
+    carbon_proto: tcp
     prefix: dns
     url: http://localhost/render
 

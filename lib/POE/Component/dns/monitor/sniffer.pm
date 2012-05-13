@@ -133,8 +133,8 @@ sub spawn {
             _child  => \&sniffer_handle_sigchld,
             sniffer_start           => \&sniffer_start,
             sniffer_load_plugins    => \&sniffer_load_plugins,
-            sniffer_stats           => \&sniffer_stats,
             # Actually handle the packets
+            feature                 => \&sniffer_feature,
             handle_packets          => \&sniffer_handle_packets,
             dns_parse               => \&sniffer_dns_parse,
         },
@@ -167,9 +167,6 @@ sub sniffer_start {
     $kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
         if exists $args->{PcapOpts}{filter} && length $args->{PcapOpts}{filter};
     $kernel->call( pcap => 'run' );
-
-    # Initialize Statistics Engine
-    $kernel->yield('sniffer_stats');
 }
 
 sub sniffer_load_plugins {
@@ -238,10 +235,13 @@ sub sniffer_load_plugins {
             my ($feature, $error);
             try {
                 $feature = $plugin->provides;
-                $features{$feature} = $plugin->spawn(
+                die "$feature already provided by $features{$feature}->{provided_by}"
+                    if exists $features{$feature};
+                my $sid = $plugin->spawn(
                     Config => $featureConf,
                     LogSID => $heap->{log},
                 );
+                $features{$feature} = { sid => $sid, provided_by => $plugin };
             } catch {
                 $error++;
                 $kernel->post( $heap->{log} => warning => "feature::$name : unable to spawn: $_" );
@@ -256,6 +256,7 @@ sub sniffer_load_plugins {
         }
     }
     $heap->{_loaded_plugins} = \%plugins;
+    $heap->{_features} = \%features;
     my $totalPlugins = scalar keys %plugins;
     if( $totalPlugins < 1 ) {
         $kernel->call( $heap->{log} => error => "Did not load any plugins, so exiting!" );
@@ -266,16 +267,32 @@ sub sniffer_load_plugins {
 }
 
 #------------------------------------------------------------------------#
+# sniffer_feature - wrapper around loaded features
+sub sniffer_feature {
+    my ($kernel,$heap,$feature,@args) = @_[KERNEL,HEAP,ARG0..$#_];
+
+    # Feature lookup via alias
+    my $sid = $kernel->alias_resolve( $feature );
+
+    if( defined $sid ) {
+        $kernel->post( $sid, @args );
+    }
+    else {
+        $kernel->port( $heap->{log} => debug => "feature $feature not available" );
+    }
+}
+
+#------------------------------------------------------------------------#
 # sniffer_handle_packet
 #  - dispatch the packet to the parser
 sub sniffer_handle_packets {
     my ($kernel,$heap,$packets) = @_[KERNEL,HEAP,ARG0];
 
-    increment_stat( $heap, 'dispatch' );
+    $kernel->yield(feature => stats => incr => 'sniffer.dispatch');
     foreach my $inst ( @{ $packets } )  {
         my ($hdr, $pkt) = @{ $inst };
         next unless defined $hdr;
-        increment_stat( $heap, 'packet' );
+        $kernel->yield(feature => stats => incr => 'sniffer.packet.total');
 
         #
         # Begin Decoding
@@ -294,7 +311,7 @@ sub sniffer_handle_packets {
                 dest_port => $udp->{dest_port},
                 'time' => join('.', $hdr->{tv_sec}, sprintf("%0.6d", $hdr->{tv_usec}) ),
             );
-            increment_stat( $heap, 'udp' );
+            $kernel->yield(feature => stats => incr => 'sniffer.packet.udp');
             $kernel->yield( dns_parse => $udp, \%ip );
         }
         # Handle TCP Packets
@@ -307,11 +324,11 @@ sub sniffer_handle_packets {
                 dest_port => $tcp->{dest_port},
                 'time' => join('.', $hdr->{tv_sec}, sprintf("%0.6d", $hdr->{tv_usec}) ),
             );
-            increment_stat( $heap, 'tcp' );
+            $kernel->yield(feature => stats => incr => 'sniffer.packet.tcp');
             $kernel->yield( dns_parse => $tcp, \%ip );
         }
         else {
-            increment_stat( $heap, 'invalid' );
+            $kernel->yield(feature => stats => incr => 'sniffer.packet.invalid');
         }
     }
 }
@@ -332,18 +349,18 @@ sub sniffer_dns_parse {
     # Parse DNS Packet
     my $dnsp = Net::DNS::Packet->new( \$layer4->{data} );
     return unless defined $dnsp;
-    increment_stat( $heap, 'dns' );
+    $kernel->yield(feature => stats => incr => 'sniffer.dns.total');
 
     #
     # Server Accounting.
     my $qa = $dnsp->header->qr ? 'answer' : 'question';
-    increment_stat( $heap, $qa );
+    $kernel->yield(feature => stats => incr => "sniffer.dns.$qa");
 
     my %info = ( 'time' => $ip->{time} );
     if( $qa eq 'answer' ) {
         $info{server} = $ip->{src_ip};
         $info{server_port} = $ip->{src_port};
-        $info{client} = $ip->{dest_ip}; 
+        $info{client} = $ip->{dest_ip};
         $info{client_port} = $ip->{dest_port};
     }
     else {
@@ -379,53 +396,8 @@ sub sniffer_dns_parse {
 
     foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
         $kernel->post( $plugin_name => process => $dnsp, { %info, %ID } );
-        increment_stat( $heap, "plugin::$plugin_name" );
+        $kernel->yield(feature => stats => incr => "sniffer.plugin.$plugin_name");
     }
-}
-
-sub sniffer_stats {
-    my ($kernel,$heap) = @_[KERNEL,HEAP];
-
-    # Delete the stats from the heap;
-    my $stats = delete $heap->{stats};
-
-    my @pairs = ();
-    foreach my $k (qw( dispatch packet invalid udp tcp port53 dns question answer )) {
-        if( exists $stats->{$k} ) {
-            push @pairs, "$k=$stats->{$k}";
-        }
-    }
-    foreach my $plugin ( sort grep /^plugin\:\:/, keys %{ $stats } ) {
-        push @pairs, "$plugin=$stats->{$plugin}";
-    }
-    $kernel->post( log => 'debug' => 'STATS: ' . join(', ', @pairs) );
-
-    # RRD Track these
-    my @tracked = (qw(dispatch packet udp tcp question answer),
-        map { join('::', 'plugin', $_ ) } keys %{ $heap->{_loaded_plugins} }
-    );
-    foreach my $stat ( @tracked ) {
-        my @path = split /\:\:/, $stat;
-        #$rrd->update( { count => exists $stats->{$stat} ? $stats->{$stat} : 0 } );
-        # TODO: Replace this with graphite bindings
-    }
-
-    # Redo Stats Event
-    $kernel->delay_add( 'sniffer_stats', 60 );
-}
-
-sub increment_stat {
-    my ($heap,$key) = @_;
-
-    # make sure the stat exists
-    if( !exists $heap->{stats}  ) {
-        $heap->{stats} = {};
-    }
-    if( !exists $heap->{stats}{$key} ) {
-        $heap->{stats}{$key} = 0;
-    }
-    # increment stat
-    $heap->{stats}{$key}++;
 }
 
 # RETURN TRUE;

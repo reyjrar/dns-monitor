@@ -2,6 +2,7 @@ package POE::Component::dns::monitor::feature::graphite;
 
 use POE;
 use IO::Socket::INET;
+use Try::Tiny;
 
 # All features have to tell me what they provide!
 sub provides { return 'stats'; }
@@ -33,9 +34,12 @@ sub graphite_start {
 
     # Parse configuration
     my %cfg = (
-        interval => 60,
-        prefix   => 'dns',
-        %{ $args->{Config} }
+        interval        => 60,
+        prefix          => 'dns',
+        carbon_host     => 'localhost',
+        carbon_port     => 2003,
+        carbon_proto    => 'tcp',
+        %{ $args->{Config} },
     );
     # Set configuration
     $heap->{_cfg} = \%cfg;
@@ -43,7 +47,7 @@ sub graphite_start {
     # Initialize some stuff
     $heap->{log} = $args->{LogSID};
     $heap->{_store} = {};
-    $heap->{_cached} = {};
+    $heap->{_cached} = [];
 
     # Install the repeating event
     $kernel->delay_add( 'graphite_send', $heap->{_cfg}{interval} );
@@ -74,7 +78,7 @@ sub graphite_raw_value {
     $heap->{_store}{raw} = \qw() if !exists $heap->{_store}{raw};
     push @{ $heap->{_store}{raw} }, "$m $v $t";
 }
-sub graphite_send_metrics {
+sub graphite_send {
     my ($kernel,$heap) = @_[KERNEL,HEAP];
 
     my $counters   = delete $heap->{_store}{counters} if exists $heap->{_store}{counters};
@@ -106,7 +110,7 @@ sub graphite_send_metrics {
         push @{ $heap->{_cached} }, \@updates;
         $kernel->post( $heap->{log} => notice => "graphite server unavailable, cached writes" );
     }
-    $kernel->delay_add( 'graphite_send' => $heap->{interval} );
+    $kernel->delay_add( 'graphite_send' => $heap->{_cfg}{interval} );
 }
 sub clean_metric {
     my ($prefix,$name) = @_;
