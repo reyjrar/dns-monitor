@@ -2,7 +2,9 @@ package POE::Component::dns::monitor::feature::graphite;
 
 use POE;
 use IO::Socket::INET;
+use CHI;
 use Try::Tiny;
+use File::Temp;
 
 # All features have to tell me what they provide!
 sub provides { return 'stats'; }
@@ -20,8 +22,9 @@ sub spawn {
         add     => \&graphite_add,
         incr    => \&graphite_add,
         value   => \&graphite_raw_value,
-        graphite_start => \&graphite_start,
-        graphite_send  => \&graphite_send,
+        graphite_start       => \&graphite_start,
+        graphite_send        => \&graphite_send,
+        graphite_flush_cache => \&graphite_flush_cache,
     });
 
     return $sess->ID;
@@ -34,11 +37,12 @@ sub graphite_start {
 
     # Parse configuration
     my %cfg = (
-        interval        => 60,
-        prefix          => 'dns',
-        carbon_host     => 'localhost',
-        carbon_port     => 2003,
-        carbon_proto    => 'tcp',
+        interval             => 60,
+        prefix               => 'dns',
+        carbon_host          => 'localhost',
+        carbon_port          => 2003,
+        carbon_proto         => 'tcp',
+        cache_flush_intercal => 300,
         %{ $args->{Config} },
     );
     # Set configuration
@@ -47,7 +51,14 @@ sub graphite_start {
     # Initialize some stuff
     $heap->{log} = $args->{LogSID};
     $heap->{_store} = {};
-    $heap->{_cached} = [];
+
+    # Setup the cache
+    my ($tmpfh,$tmpfile) = File::Temp->new( SUFFIX => '.cache' );
+    $heap->{_cache} = CHI->new(
+        driver     => 'File',
+        path       => $tmpfile,
+        expires_in => 86400,
+    );
 
     # Install the repeating event
     $kernel->delay_add( 'graphite_send', $heap->{_cfg}{interval} );
@@ -107,10 +118,47 @@ sub graphite_send {
         $socket->send( join '', map { "$_\n" } @updates );
     }
     else {
-        push @{ $heap->{_cached} }, \@updates;
+        $heap->{_cache}->set( $t => \@updates );
         $kernel->post( $heap->{log} => notice => "graphite server unavailable, cached writes" );
+        $kernel->delay_add( graphite_flush_cache => $heap->{_cfg}{cache_flush_interval} );
     }
     $kernel->delay_add( 'graphite_send' => $heap->{_cfg}{interval} );
+}
+sub graphite_flush_cache {
+    my ($kernel,$heap) = @_[KERNEL,HEAP];
+
+    my $socket;
+    try {
+        $socket = IO::Socket::INET->new(
+                PeerAddr    => $heap->{_cfg}{carbon_server},
+                PeerPort    => $heap->{_cfg}{carbon_port},
+                PeerProto   => $heap->{_cfg}{carbon_proto},
+        );
+    };
+
+    if( ! defined $socket || !$socket->connected ) {
+        # Delay the writes
+        $kernel->post( $heap->{log} => notice => "graphite server unavailable, cache flush postponed" );
+        $kernel->delay_add( graphite_flush_cache => $heap->{_cfg}{cache_flush_interval} );
+        return;
+    }
+    # If we get here, send the updates to the graphite server;
+    my $error = 0;
+    foreach my $key ( $heap->{_cache}->get_keys ) {
+        my $updates = $heap->{_cache}->get( $key );
+        my $sent = $socket->send( join '', map { "$_\n" } @$updates );
+        if( defined $sent and $sent > 0 ) {
+            $heap->{_cache}->remove( $key );
+        }
+        else {
+            $error++;
+        }
+    }
+
+    if( $error > 0 ) {
+        $kernel->post( $heap->{log} => error => 'graphite_flush_cache experienced errors transmitting data to the graphite server, rescheduling a key flush');
+        $kernel->post( $heap->{log} => notice => "graphite server unavailable, cache flush postponed" );
+    }
 }
 sub clean_metric {
     my ($prefix,$name) = @_;
