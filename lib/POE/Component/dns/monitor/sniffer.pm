@@ -17,8 +17,8 @@ use Net::DNS::Packet;
 # Handle Loading Plugins
 use Module::Pluggable   require     => 1,
                         search_path => [qw(
-                            POE::Component::dns::monitor::sniffer::plugin
                             POE::Component::dns::monitor::feature
+                            POE::Component::dns::monitor::sniffer::plugin
                         )];
 use Try::Tiny;
 
@@ -33,11 +33,11 @@ POE::Component::dns::monitor::sniffer - Passive DNS Monitoring
 
 =head1 VERSION
 
-Version 0.01
+Version 0.9
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.9';
 
 =head1 SYNOPSIS
 
@@ -135,6 +135,7 @@ sub spawn {
             sniffer_load_plugins    => \&sniffer_load_plugins,
             # Actually handle the packets
             feature                 => \&sniffer_feature,
+            check_feature           => \&sniffer_check_feature,
             handle_packets          => \&sniffer_handle_packets,
             dns_parse               => \&sniffer_dns_parse,
         },
@@ -174,7 +175,7 @@ sub sniffer_load_plugins {
 
     my %plugins=();
     my %features=();
-    foreach my $plugin ( __PACKAGE__->plugins ) {
+    foreach my $plugin ( sort __PACKAGE__->plugins ) {
         my $name;
         if(($name) = ($plugin =~ /::plugin::(.*)$/) ) {
             $kernel->post( $heap->{log} => debug => "found plugin: $name" );
@@ -279,6 +280,22 @@ sub sniffer_feature {
     }
     else {
         $kernel->port( $heap->{log} => debug => "feature $feature not available" );
+    }
+}
+
+#------------------------------------------------------------------------#
+# sniffer_check_feature - check for a feature
+sub sniffer_check_feature {
+    my ($kernel,$heap,$feature) = @_[KERNEL,HEAP,ARG0];
+
+    # Feature lookup via alias
+    my $sid = $kernel->alias_resolve( $feature );
+
+    if( defined $sid ) {
+        return 1;
+    }
+    else {
+        return 0;
     }
 }
 
