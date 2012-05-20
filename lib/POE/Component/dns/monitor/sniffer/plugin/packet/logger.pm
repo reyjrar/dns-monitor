@@ -179,7 +179,8 @@ sub packet_logger_flush_entry {
                 my $subline = $line;
                 foreach my $field (qw(sect class rtype name value opts ttl)) {
                     if( exists $item->{$field} ) {
-                        $subline .= qq{ $field=$item->{$field}};
+                        my $val = defined $item->{$field} ? $item->{$field} : '';
+                        $subline .= qq{ $field=$val};
                     }
                 }
                 syslog( $heap->{config}{priority}, $subline );
