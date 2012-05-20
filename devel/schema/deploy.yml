@@ -83,9 +83,6 @@ upgrade:
           - zone_answer
 
   20110615:
-    base:
-      - ltree
-
     plugins:
       zone::discovery:
         level: 0

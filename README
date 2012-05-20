@@ -6,7 +6,7 @@ REQUIREMENTS
 
 	Perl (5.10.1 or later)
 	libpcap (1.1.1 recommended)
-	PostgreSQL (8.3 or later)
+	PostgreSQL (8.3 or later) w/ltree extension
 
 	PostgreSQL Database
 	------------------
