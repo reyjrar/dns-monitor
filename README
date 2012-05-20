@@ -10,7 +10,7 @@ REQUIREMENTS
 
 	PostgreSQL Database
 	------------------
-	Make sure you add the PL/PgSQL Language to the database before running the install script
+	Make sure you add the ltree extension to the database before running the install script
 
 
 AUTHOR

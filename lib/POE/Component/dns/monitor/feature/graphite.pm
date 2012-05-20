@@ -67,7 +67,7 @@ sub graphite_start {
     $kernel->delay_add( 'graphite_send', $heap->{_cfg}{interval} );
 }
 sub graphite_add {
-    my ($kernel,$heap,$metric,$value) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$metric,$value) = @_[KERNEL,HEAP,ARG0,ARG1];
 
     my $m=clean_metric( $heap->{_cfg}{prefix}, $metric );
     my $v=clean_value( $value );
