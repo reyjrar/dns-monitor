@@ -5,9 +5,9 @@ use Moose;
 extends 'dns::monitor::plugin::sniffer::log';
 
 sub write {
-	my ($self,$line) = @_;
+    my ($self,$line) = @_;
 
-	print $line,"\n";
+    print $line,"\n";
 }
 
 with 'dns::monitor::plugin::sniffer::log::dest';

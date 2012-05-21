@@ -5,9 +5,9 @@ use Moose;
 extends 'dns::monitor::core::plugin';
 
 has dbconn => (
-	isa => 'Object',
-	is => 'ro',
-	required => 1,
+    isa => 'Object',
+    is => 'ro',
+    required => 1,
 );
 
 no Moose;

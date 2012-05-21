@@ -13,15 +13,15 @@ has priority => (
 
 
 after START => sub {
-	my ($self) = @_[OBJECT];
+    my ($self) = @_[OBJECT];
 
-	openlog( 'dnsmonitor', '', $self->config->{facility} );
+    openlog( 'dnsmonitor', '', $self->config->{facility} );
 };
 
 sub write {
-	my ($self,$line) = @_;
+    my ($self,$line) = @_;
 
-	syslog( $self->config->{priority}, $line ); 
+    syslog( $self->config->{priority}, $line );
 }
 
 with 'dns::monitor::plugin::sniffer::log::dest';
