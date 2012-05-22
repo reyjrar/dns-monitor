@@ -11,7 +11,6 @@ sub spawn {
     my %args = @_;
 
     die "Bad Config" if ref $args{Config} ne 'HASH';
-    die "Bad DBH" unless ref $args{DBH};
     die "No Alias" unless length $args{Alias};
 
     my $sess = POE::Session->create( inline_states => {
@@ -19,7 +18,6 @@ sub spawn {
         _stop   => sub { },
         server_stats_start => \&server_stats_start,
         process => \&process,
-        post_updates => \&post_updates,
     });
 
     return $sess->ID;
@@ -29,78 +27,43 @@ sub server_stats_start {
     my($kernel,$heap,$args) = @_[KERNEL,HEAP,ARG0];
 
     $kernel->alias_set( $args->{Alias} );
-    
+
     # Store stuff in the heap
     $heap->{log} = $args->{LogSID};
-    $heap->{dbh} = $args->{DBH};
-    $heap->{interval} = exists $args->{Config}{interval} ? $args->{Config}{interval} : 300;
-    $heap->{updates} = {};
 
-    $kernel->delay_add( 'post_updates', $heap->{interval} );
-}
+    # Check to see if stats is enabled
+    $heap->{enabled} = $kernel->call( sniffer => check_feature => 'stats' );
 
-sub post_updates {
-    my ($kernel,$heap) = @_[KERNEL,HEAP];
+    if( !$heap->{enabled} ) {
+        $kernel->post( $heap->{log} => 'error' => q{server::stats requires feature 'stats', but is not being provided, noop results.} );
 
-    # Grab the updates:
-    my $updates = delete $heap->{updates};
-    $heap->{updates} = {};
-
-    # Statement Handle Caching
-    my %SQL = (
-        update => q{select server_stats_update( ?, ?, ?, ?, ? )},
-    );
-    my %STH = ();
-    foreach my $s (keys %SQL) {
-        $STH{$s} = $heap->{dbh}->run( fixup => sub {
-                my $sth = $_->prepare( $SQL{$s} );
-                $sth;
-            }, catch {
-                my $err = shift;
-                $kernel->post( $heap->{log} => notice => qq|server::stats STH: $s failed: $err| );
-            }
-        );
     }
-
-    foreach my $id ( keys %{ $updates } ) {
-        my %info = %{ $updates->{$id} };
-
-        $STH{update}->execute( $id, @info{qw( queries answers nx errors )} );
-    }
-
-    $kernel->delay_add( 'post_updates', $heap->{interval} );
 }
 
 sub process {
     my ( $kernel,$heap,$dnsp,$info ) = @_[KERNEL,HEAP,ARG0,ARG1];
-    
-    my $updates = $heap->{updates};
-    my $id = $info->{server_id};
 
-    if( ! exists $updates->{$id} ) {
-        $updates->{$id} = {
-            queries => 0,
-            answers => 0,
-            nx      => 0,
-            errors  => 0,
-        };
-    }   
+    return unless $heap->{enabled};
 
     # Check for query/response
+    my $metric = '';
     if( $dnsp->header->qr ) {
         if ( $dnsp->header->rcode eq 'NOERROR' ) {
-            $updates->{$id}{answers}++;
+            $metric='answer';
         }
         elsif( $dnsp->header->rcode eq 'NXDOMAIN' ) {
-            $updates->{$id}{nx}++;
+            $metric='nx';
         }
         else {
-            $updates->{$id}{errors}++;
+            $metric='error';
         }
     }
     else {
-        $updates->{$id}{queries}++;
+       $metric='query';
     }
+    $kernel->post( stats => incr => "servers.$info->{client}.$metric.count" );
+    $kernel->post( stats => add  => "servers.$info->{client}.$metric.bytes", length $dnsp );
+
 }
 
 # Return True
