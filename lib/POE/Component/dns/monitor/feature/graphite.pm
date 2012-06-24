@@ -17,11 +17,11 @@ sub spawn {
     die "Bad Config" if ref $args{Config} ne 'HASH';
 
     my $sess = POE::Session->create( inline_states => {
-        _start  => sub { $poe_kernel->yield( 'graphite_start', \%args ); },
-        _stop   => sub { },
-        add     => \&graphite_add,
-        incr    => \&graphite_add,
-        value   => \&graphite_raw_value,
+        _start               => sub { $poe_kernel->yield( 'graphite_start', \%args ); },
+        _stop                => sub { },
+        add                  => \&graphite_add,
+        incr                 => \&graphite_add,
+        value                => \&graphite_raw_value,
         graphite_start       => \&graphite_start,
         graphite_send        => \&graphite_send,
         graphite_flush_cache => \&graphite_flush_cache,
