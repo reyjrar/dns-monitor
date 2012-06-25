@@ -31,7 +31,7 @@ sub packet_store_start {
 	my($kernel,$heap,$args) = @_[KERNEL,HEAP,ARG0];
 
 	$kernel->alias_set( $args->{Alias} );
-	
+
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
 	$heap->{dbh} = $args->{DBH};
@@ -115,7 +115,7 @@ sub process {
 		}
 
 		my @sets = ();
-		
+
 		foreach my $section (qw(answer additional authority)) {
 			my @records = ();
 			try {
@@ -129,19 +129,25 @@ sub process {
 		foreach my $set ( @sets ) {
 			foreach my $pa ( @{ $set->{rr} } ) {
 				my %data = _get_rr_data( $pa );
-				
+
 				next unless defined $data{value} && length $data{value};
-				
-				$heap->{sth}{answer}->execute(
-					$response_id,
-					$set->{name},
-					$pa->ttl,
-					$pa->class,
-					$pa->type,
-					$pa->name,
-					$data{value},
-					$data{opts},
-				);
+                # Do the insert, trap errors
+                try {
+                    $heap->{sth}{answer}->execute(
+                        $response_id,
+                        $set->{name},
+                        $pa->ttl,
+                        $pa->class,
+                        $pa->type,
+                        $pa->name,
+                        $data{value},
+                        $data{opts},
+                    );
+                }
+                catch {
+                    my $err = shift;
+                    $kernel->post( $heap->{log} => error => "Error storing packet: $err");
+                };
 			}
 		}
 	}
@@ -221,7 +227,7 @@ sub _get_rr_data {
 	elsif( $pa->type eq 'SPF' || $pa->type eq 'TXT' ) {
 		$data{value} = $pa->txtdata;
 	}
-	
+
 	return %data;
 }
 
