@@ -21,7 +21,7 @@ after START => sub {
 sub write {
 	my ($self,$line) = @_;
 
-	syslog( $self->config->{priority}, $line ); 
+	syslog( $self->config->{priority}, $line );
 }
 
 with 'dns::monitor::plugin::sniffer::log::dest';
