@@ -279,7 +279,7 @@ sub sniffer_feature {
         $kernel->post( $sid, @args );
     }
     else {
-        $kernel->port( $heap->{log} => debug => "feature $feature not available" );
+        $kernel->post( $heap->{log} => debug => "feature $feature not available" );
     }
 }
 
