@@ -25,156 +25,156 @@ Catalyst Controller.
 sub index :Path :Args(0) {
     my ( $self, $c ) = @_;
 
-	my %dispatch = (
-		'clients-asking'	=> '/search/clients_asking',
-		'query-asked'		=> '/search/query_asked',
-		'zone-tree'			=> '/search/zone_tree',
-	);
+    my %dispatch = (
+        'clients-asking'    => '/search/clients_asking',
+        'query-asked'       => '/search/query_asked',
+        'zone-tree'         => '/search/zone_tree',
+    );
 
-	my $params = $c->req->params();
-	if( exists $params->{search_type} && exists $dispatch{$params->{search_type}} ) {
-		$c->stash->{query} = $params->{search_value};
-		$c->detach( $dispatch{$params->{search_type}})
-			if exists $params->{search_value} && defined $params->{search_value};
-	} 
+    my $params = $c->req->params();
+    if( exists $params->{search_type} && exists $dispatch{$params->{search_type}} ) {
+        $c->stash->{query} = $params->{search_value};
+        $c->detach( $dispatch{$params->{search_type}})
+            if exists $params->{search_value} && defined $params->{search_value};
+    }
 
-	$c->flash->{notice} = 'invalid search parameters';
-	$c->forward( '/index' );
+    $c->flash->{notice} = 'invalid search parameters';
+    $c->forward( '/index' );
 }
 
 sub clients_asking :Path('clients-asking') :Args(0) {
-	my ($self,$c) = @_;
+    my ($self,$c) = @_;
 
-	my @parts = split /\s+/, $c->stash->{query};
-	#my @parts = map { s/[^a-zA-Z0-9\_\-\.]//g; $_ } split /\s+/, $query;
-	my %parameters = ();
+    my @parts = split /\s+/, $c->stash->{query};
+    #my @parts = map { s/[^a-zA-Z0-9\_\-\.]//g; $_ } split /\s+/, $query;
+    my %parameters = ();
 
-	if( @parts == 3 ) {	
-		%parameters = (
-			class	=> uc $parts[0],
-			type 	=> uc $parts[1],
-			name	=> $parts[2],
-		);
-	}
-	elsif( $parts[0] =~ /^([0-9]{1,3}\.){3}[0-9]{1,3}$/ ) {
-		%parameters = (
-			class	=> 'IN',
-			type	=> 'PTR',
-			name	=> $parts[0],
-		);
-	}
-	else {
-		%parameters = (
-			class	=> 'IN',
-			type	=> 'A',
-			name	=> $parts[0],
-		);
-	}
-	my $question = $c->model('db::packet::record::question')->find(\%parameters);
+    if( @parts == 3 ) {
+        %parameters = (
+            class   => uc $parts[0],
+            type    => uc $parts[1],
+            name    => $parts[2],
+        );
+    }
+    elsif( $parts[0] =~ /^([0-9]{1,3}\.){3}[0-9]{1,3}$/ ) {
+        %parameters = (
+            class   => 'IN',
+            type    => 'PTR',
+            name    => $parts[0],
+        );
+    }
+    else {
+        %parameters = (
+            class   => 'IN',
+            type    => 'A',
+            name    => $parts[0],
+        );
+    }
+    my $question = $c->model('db::packet::record::question')->find(\%parameters);
 
-	# Detach if nothing found
-	$c->detach( '/search/nothing_found' ) unless defined $question;
-	
-	my $sth = $c->dbconn->run( fixup => sub {
-		my $sth = $_->prepare(q{
-			select
-				ip as client, min(q.query_ts) as first, max(q.query_ts) as last, count(1) as count
-			from
-				packet_meta_question mq
-				inner join packet_query q on mq.query_id = q.id
-				inner join client c on q.client_id = c.id
-			where
-				mq.question_id = ?
-			group by ip
-		});
-	});
+    # Detach if nothing found
+    $c->detach( '/search/nothing_found' ) unless defined $question;
 
-	my @results = ();
-	$sth->execute( $question->id );
-	while( my $row = $sth->fetchrow_hashref ) {
-		push @results, $row;
-	}
+    my $sth = $c->dbconn->run( fixup => sub {
+        my $sth = $_->prepare(q{
+            select
+                ip as client, min(q.query_ts) as first, max(q.query_ts) as last, count(1) as count
+            from
+                packet_meta_question mq
+                inner join packet_query q on mq.query_id = q.id
+                inner join client c on q.client_id = c.id
+            where
+                mq.question_id = ?
+            group by ip
+        });
+    });
 
-	$c->stash->{template} = '/search/clients-asking.mas';
-	$c->stash->{question} = $question;
-	$c->stash->{results} = \@results;
+    my @results = ();
+    $sth->execute( $question->id );
+    while( my $row = $sth->fetchrow_hashref ) {
+        push @results, $row;
+    }
+
+    $c->stash->{template} = '/search/clients-asking.mas';
+    $c->stash->{question} = $question;
+    $c->stash->{results} = \@results;
 }
 
 sub query_asked :Path('query-asked') :Args(0) {
-	my ($self,$c) = @_;
+    my ($self,$c) = @_;
 
-	my @parts = map { s/[^a-zA-Z0-9\_\-\.]//g; $_ } split /\s+/, $c->stash->{query};
-	my %parameters = ();
+    my @parts = map { s/[^a-zA-Z0-9\_\-\.]//g; $_ } split /\s+/, $c->stash->{query};
+    my %parameters = ();
 
-	if( @parts == 3 ) {	
-		%parameters = (
-			class	=> uc $parts[0],
-			type 	=> uc $parts[1],
-			name	=> $parts[2],
-		);
-	}
-	elsif( $parts[0] =~ /^([0-9]{1,3}\.){3}[0-9]{1,3}$/ ) {
-		%parameters = (
-			class	=> 'IN',
-			type	=> 'PTR',
-			name	=> $parts[0],
-		);
-	}
-	else {
-		%parameters = (
-			class	=> 'IN',
-			type	=> 'A',
-			name	=> $parts[0],
-		);
-	}
-	my $question = $c->model('db::packet::record::question')->find(\%parameters);
+    if( @parts == 3 ) {
+        %parameters = (
+            class   => uc $parts[0],
+            type    => uc $parts[1],
+            name    => $parts[2],
+        );
+    }
+    elsif( $parts[0] =~ /^([0-9]{1,3}\.){3}[0-9]{1,3}$/ ) {
+        %parameters = (
+            class   => 'IN',
+            type    => 'PTR',
+            name    => $parts[0],
+        );
+    }
+    else {
+        %parameters = (
+            class   => 'IN',
+            type    => 'A',
+            name    => $parts[0],
+        );
+    }
+    my $question = $c->model('db::packet::record::question')->find(\%parameters);
 
-	# Detach if nothing found
-	$c->detach( '/search/nothing_found' ) unless defined $question;
+    # Detach if nothing found
+    $c->detach( '/search/nothing_found' ) unless defined $question;
 
-	# Search for Queries
-	my $sth = $c->dbconn->run( fixup => sub {
-		my $sth = $_->prepare(q{
-			select
-				c.ip as cli,
-				s.ip as srv,
-				q.query_ts,
-				qs.class, qs.type, qs.name,
-				q.flag_recursive
-			from
-				packet_meta_question mq
-				inner join packet_record_question qs on mq.question_id = qs.id
-				inner join packet_query q on mq.query_id = q.id
-				inner join client c on q.client_id = c.id
-				inner join server s on q.server_id = s.id
-			where
-				mq.question_id = ?
-			order by q.id desc
-				limit 500
-		});
-	});
+    # Search for Queries
+    my $sth = $c->dbconn->run( fixup => sub {
+        my $sth = $_->prepare(q{
+            select
+                c.ip as cli,
+                s.ip as srv,
+                q.query_ts,
+                qs.class, qs.type, qs.name,
+                q.flag_recursive
+            from
+                packet_meta_question mq
+                inner join packet_record_question qs on mq.question_id = qs.id
+                inner join packet_query q on mq.query_id = q.id
+                inner join client c on q.client_id = c.id
+                inner join server s on q.server_id = s.id
+            where
+                mq.question_id = ?
+            order by q.id desc
+                limit 500
+        });
+    });
 
-	my @results = ();
-	$sth->execute( $question->id );
-	while( my $row = $sth->fetchrow_hashref ) {
-		push @results, $row;
-	}
+    my @results = ();
+    $sth->execute( $question->id );
+    while( my $row = $sth->fetchrow_hashref ) {
+        push @results, $row;
+    }
 
-	$c->stash->{template} = '/search/query-asked.mas';
-	$c->stash->{question} = $question;
-	$c->stash->{results} = \@results;
+    $c->stash->{template} = '/search/query-asked.mas';
+    $c->stash->{question} = $question;
+    $c->stash->{results} = \@results;
 }
 
 sub zone_tree :Path('zone-tree') :Args(0) {
-	my ($self,$c) = @_;
+    my ($self,$c) = @_;
 
-	$c->stash->{template} = '/search/zone-tree.mas';
+    $c->stash->{template} = '/search/zone-tree.mas';
 }
 
 sub nothing_found :Path('nothing') Args(0) {
-	my ($self,$c) = @_;
+    my ($self,$c) = @_;
 
-	$c->stash->{template} = '/search/nothing.mas';
+    $c->stash->{template} = '/search/nothing.mas';
 }
 
 =head1 AUTHOR
