@@ -15,9 +15,9 @@ dns-monitor is a project aimed at providing statistics on dns usage
 
 # AUTHOR
 
-Brad Lhotsky <brad.lhotsky@gmail.com>
-http://twitter.com/reyjrar
-http://divisionbyzero.net/blog
+* Brad Lhotsky <brad.lhotsky@gmail.com>
+  * http://twitter.com/reyjrar
+  * http://divisionbyzero.net/blog
 
 # INSTALL
 
