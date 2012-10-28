@@ -6,11 +6,11 @@ REQUIREMENTS
 
 	Perl (5.10.1 or later)
 	libpcap (1.1.1 recommended)
-	PostgreSQL (8.3 or later)
+	PostgreSQL (8.3 or later) w/ltree extension
 
 	PostgreSQL Database
 	------------------
-	Make sure you add the PL/PgSQL Language to the database before running the install script
+	Make sure you add the ltree extension to the database before running the install script
 
 
 AUTHOR

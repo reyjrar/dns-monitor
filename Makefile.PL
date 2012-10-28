@@ -21,7 +21,7 @@ requires 'File::Find::Rule';
 requires 'Exception::Class::DBI';
 requires 'CHI';
 requires 'EV';
-requires 'Log::Dispath::FileRotate';
+requires 'Log::Dispatch::FileRotate';
 requires 'POE';
 requires 'POE::Component::Daemon';
 requires 'POE::Component::Pcap';

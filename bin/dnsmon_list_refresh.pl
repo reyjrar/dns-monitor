@@ -46,7 +46,7 @@ my $CFG = YAML::LoadFile( $configFile ) or die "unable to load $configFile: $!\n
 my $dbh = DBI->connect( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass} );
 
 # SQL Statements
-my %SQL = ( 
+my %SQL = (
     list => q{select * from list where can_refresh is true
                 and (refresh_last_ts < NOW() - refresh_every or refresh_last_ts is null)
     },
@@ -77,7 +77,7 @@ foreach my $s (keys %SQL){
     $STH{$s} = $dbh->prepare($SQL{$s});
 }
 $STH{list}->execute();
-while( my $list = $STH{list}->fetchrow_hashref ) { 
+while( my $list = $STH{list}->fetchrow_hashref ) {
     # Fetch List Entries
     my $content;
     try {
@@ -85,11 +85,11 @@ while( my $list = $STH{list}->fetchrow_hashref ) {
     } catch {
         print "ERROR: $_\n" unless $OPT{q};
         next;
-    }; 
+    };
 
     # Clear the list_entry.refreshed flag
     $STH{clear_entry_refresh}->execute( $list->{id} );
-    
+
     # Add or Update the list
     foreach my $line (map { lc } split /\r*\n+/, $content) {
         # Assume first column is the zone

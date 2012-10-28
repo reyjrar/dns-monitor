@@ -17,11 +17,11 @@ sub spawn {
     die "Bad Config" if ref $args{Config} ne 'HASH';
 
     my $sess = POE::Session->create( inline_states => {
-        _start  => sub { $poe_kernel->yield( 'graphite_start', \%args ); },
-        _stop   => sub { },
-        add     => \&graphite_add,
-        incr    => \&graphite_add,
-        value   => \&graphite_raw_value,
+        _start               => sub { $poe_kernel->yield( 'graphite_start', \%args ); },
+        _stop                => sub { },
+        add                  => \&graphite_add,
+        incr                 => \&graphite_add,
+        value                => \&graphite_raw_value,
         graphite_start       => \&graphite_start,
         graphite_send        => \&graphite_send,
         graphite_flush_cache => \&graphite_flush_cache,
@@ -60,11 +60,14 @@ sub graphite_start {
         expires_in => 86400,
     );
 
+    # Flush the cache if necessary
+    $kernel->yield( 'graphite_flush_cache' );
+
     # Install the repeating event
     $kernel->delay_add( 'graphite_send', $heap->{_cfg}{interval} );
 }
 sub graphite_add {
-    my ($kernel,$heap,$metric,$value) = @_[KERNEL,HEAP,ARG0];
+    my ($kernel,$heap,$metric,$value) = @_[KERNEL,HEAP,ARG0,ARG1];
 
     my $m=clean_metric( $heap->{_cfg}{prefix}, $metric );
     my $v=clean_value( $value );
@@ -127,6 +130,11 @@ sub graphite_send {
 sub graphite_flush_cache {
     my ($kernel,$heap) = @_[KERNEL,HEAP];
 
+    my @cached = $heap->{_cache}->get_keys;
+
+    # check to see if there's anything to send
+    return unless @cached;
+
     my $socket;
     try {
         $socket = IO::Socket::INET->new(
@@ -144,7 +152,7 @@ sub graphite_flush_cache {
     }
     # If we get here, send the updates to the graphite server;
     my $error = 0;
-    foreach my $key ( $heap->{_cache}->get_keys ) {
+    foreach my $key ( @cached ) {
         my $updates = $heap->{_cache}->get( $key );
         my $sent = $socket->send( join '', map { "$_\n" } @$updates );
         if( defined $sent and $sent > 0 ) {
