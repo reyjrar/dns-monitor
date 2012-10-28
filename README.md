@@ -1,24 +1,25 @@
-ABOUT
+# ABOUT
 
-	dns-monitor is a project aimed at providing statistics on dns usage
+*Deprecated, will be replaced with a new project soon*
 
-REQUIREMENTS
+dns-monitor is a project aimed at providing statistics on dns usage
 
-	Perl (5.10.1 or later)
-	libpcap (1.1.1 recommended)
-	PostgreSQL (8.3 or later)
+# REQUIREMENTS
 
-	PostgreSQL Database
-	------------------
-	Make sure you add the PL/PgSQL Language to the database before running the install script
+* Perl (5.10.1 or later)
+* libpcap (1.1.1 recommended)
+* PostgreSQL (8.3 or later)
+  * PL/PgSQL
+  * ltree plugin
 
 
-AUTHOR
-	Brad Lhotsky <brad.lhotsky@gmail.com>
-	http://twitter.com/reyjrar
-	http://divisionbyzero.net/blog
+# AUTHOR
 
-INSTALL
+Brad Lhotsky <brad.lhotsky@gmail.com>
+http://twitter.com/reyjrar
+http://divisionbyzero.net/blog
+
+# INSTALL
 
 	# Configure the Perl Environment
 	perl Makefile.PL
@@ -53,16 +54,11 @@ INSTALL
 	# Install the ./bin/dnsmon_maintenance.pl into the server's crontab
 	#  once every 2 hours is more than enough
 
-UPGRADE
+# UPGRADE
 
 	# If you installed the first release, you'll need to apply the schema updates:
-	./devel/deploy_database_schema.pl upgrade 20110316
+	./devel/deploy_database_schema.pl upgrade 20121028
 
-CONFIGURATION
+# CONFIGURATION
 
-	dns_monitor.yml is YAML, no, it's not JSON.
-    (don't mix tabs and spaces, you will regret it)
-
-PROBLEMS
-
-	May cause internal bleeding.
+dns_monitor.yml is YAML, no, it's not JSON.  Don't mix tabs and spaces, you will regret it.
