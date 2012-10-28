@@ -1,6 +1,0 @@
-<%method title>performance statistics</%method>
-<h2>select a component</h2>
-<ul>
-	<li><a href="<% $c->uri_for('/perf/sniffer') %>" alt="sniffer">sniffer</a></li>
-	<li><a href="<% $c->uri_for('/perf/analyzer') %>" alt="sniffer">analyzer</a></li>
-</ul>

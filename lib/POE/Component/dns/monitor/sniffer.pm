@@ -284,7 +284,7 @@ sub sniffer_dns_parse {
     if( $qa eq 'answer' ) {
         $info{server} = $ip->{src_ip};
         $info{server_port} = $ip->{src_port};
-        $info{client} = $ip->{dest_ip}; 
+        $info{client} = $ip->{dest_ip};
         $info{client_port} = $ip->{dest_port};
     }
     else {
@@ -340,16 +340,6 @@ sub sniffer_stats {
         push @pairs, "$plugin=$stats->{$plugin}";
     }
     $kernel->post( log => 'debug' => 'STATS: ' . join(', ', @pairs) );
-
-    # RRD Track these
-    my @tracked = (qw(dispatch packet udp tcp question answer),
-        map { join('::', 'plugin', $_ ) } keys %{ $heap->{_loaded_plugins} }
-    );
-    foreach my $stat ( @tracked ) {
-        my @path = split /\:\:/, $stat;
-        #$rrd->update( { count => exists $stats->{$stat} ? $stats->{$stat} : 0 } );
-        # TODO: Replace this with graphite bindings
-    }
 
     # Redo Stats Event
     $kernel->delay_add( 'sniffer_stats', 60 );

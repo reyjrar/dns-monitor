@@ -41,13 +41,6 @@ my @menuItems = (
 		],
 	},
 	{
-		title => 'performance',
-		url	  => '/perf/',
-		items => [
-			{ title => 'sniffer', url => '/perf/sniffer' },
-		],
-	},
-	{
 		title	=> 'lists',
 		url		=> '/list'
 	},
