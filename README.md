@@ -1,8 +1,13 @@
 # ABOUT
 
-*Deprecated, will be replaced with a new project soon*
-
 dns-monitor is a project aimed at providing statistics on dns usage
+
+
+## UPDATE
+
+This project will be replaced by a new dns monitoring suite, but the database structure will
+remain the same, so transitioning to the new interface will be painless.
+
 
 # REQUIREMENTS
 
