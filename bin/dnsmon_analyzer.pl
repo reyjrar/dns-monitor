@@ -43,7 +43,6 @@ my %DIRS = (
     'etc'   => File::Spec->catdir( @BasePath, 'conf' ),
     'cache' => File::Spec->catdir( @BasePath, 'cache' ),
     'db'    => File::Spec->catdir( @BasePath, 'cache', 'db' ),
-    'rrd'   => File::Spec->catdir( @BasePath, 'cache', 'rrd' ),
 );
 
 #------------------------------------------------------------------------#
@@ -57,8 +56,8 @@ if( !$OPTS{d} ) {
     my $base = basename $0;
     mkdir $DIRS{state}, 0755 unless -d $DIRS{state};
     my $PIDFILE = File::Spec->catfile( $DIRS{state}, $base . '.pid' );
-
     my $pid = check_pidfile( $PIDFILE );
+
     if( $pid > 0 ) {
         warn "$base - another process is currently running ($pid)\n";
         exit 1;

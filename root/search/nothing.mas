@@ -1,4 +1,0 @@
-<%args>
-	$query
-</%args>
-<h1>No results found for '<% $query %>'.</h1>

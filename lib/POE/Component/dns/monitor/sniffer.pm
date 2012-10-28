@@ -15,13 +15,15 @@ use NetPacket::UDP;
 use NetPacket::TCP;
 use Net::DNS::Packet;
 # Handle Loading Plugins
-use Module::Pluggable require => 1, search_path => [ 'POE::Component::dns::monitor::sniffer::plugin' ];
+use Module::Pluggable   require     => 1,
+                        search_path => [qw(
+                            POE::Component::dns::monitor::feature
+                            POE::Component::dns::monitor::sniffer::plugin
+                        )];
 use Try::Tiny;
 
 # POE
 use POE qw( Component::Pcap );
-
-use dns::monitor::rrd;
 
 =head1 NAME
 
@@ -31,11 +33,11 @@ POE::Component::dns::monitor::sniffer - Passive DNS Monitoring
 
 =head1 VERSION
 
-Version 0.01
+Version 0.9
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.9';
 
 =head1 SYNOPSIS
 
@@ -46,8 +48,8 @@ our $VERSION = '0.02';
             DBH         => $dbh,                # Required
             LogSID      => 'log',               # Default
             PcapOpts    => \%pcapOpts,          # See below for details
-            RRDOpts     => \%rrdOpts            # See below for details
             Plugins     => \%pluginConfig,      # See below for details
+            Features    => \%featureConfig,     # See below for details
     );
 
 =head1 EXPORT
@@ -74,16 +76,14 @@ Parameters:
             { dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 }
         You should really send something more interesting than that
 
-    B<RRDOpts> is a hash ref for basic RRD Configuration Options
-
     B<Plugins> is a hash ref for plugin options
         Defaults to:
         {
             'packet::store'     => { enable => 1, keep_for => '30 days' },
-            'server::authorized'    => { enable => 1 },
-            'server::stats'         => { enable => 1, rrd => 1 },
-            'client::stats'         => { enable => 1, rrd => 1 },
         }
+
+    B<Features> is a hash ref for feature configs, default is none
+
 =cut
 
 sub spawn {
@@ -99,9 +99,6 @@ sub spawn {
     my %pcapOpts = ( dev => 'any', snaplen => 1518, filter => '(tcp or udp) and port 53', promisc => 0 );
     my %pluginConfig = (
         'packet::store'     => { enable => 1, keep_for => '30 days' },
-        'server::authorized'    => { enable => 1 },
-        'server::stats'         => { enable => 1, rrd => 1 },
-        'client::stats'         => { enable => 1, rrd => 1 },
     );
     # Hashify
     foreach my $hashOpt(qw( Plugins PcapOpts ) ) {
@@ -129,15 +126,16 @@ sub spawn {
     );
 
     # Configure the Sniffer Session
-    my $session_id = POE::Session->create( 
+    my $session_id = POE::Session->create(
         inline_states => {
             _start  => sub { $poe_kernel->yield( 'sniffer_start' => \%args ) },
-            _stop   => sub {} , 
+            _stop   => sub {} ,
             _child  => \&sniffer_handle_sigchld,
             sniffer_start           => \&sniffer_start,
             sniffer_load_plugins    => \&sniffer_load_plugins,
-            sniffer_stats           => \&sniffer_stats,
             # Actually handle the packets
+            feature                 => \&sniffer_feature,
+            check_feature           => \&sniffer_check_feature,
             handle_packets          => \&sniffer_handle_packets,
             dns_parse               => \&sniffer_dns_parse,
         },
@@ -151,9 +149,9 @@ sub sniffer_start {
 
     # Store the Args in the Heap
     $heap->{_config} = $args->{Config};
+    $heap->{_features} = $args->{Features};
     $heap->{dbh} = $args->{DBH};
     $heap->{log} = $args->{LogSID};
-    $heap->{_rrd} = $args->{RRDOpts};
     $heap->{_plugins} = $args->{Plugins};
     $heap->{_pcap} = $args->{PcapOpts};
 
@@ -170,61 +168,135 @@ sub sniffer_start {
     $kernel->post( pcap => set_filter => $args->{PcapOpts}{filter} )
         if exists $args->{PcapOpts}{filter} && length $args->{PcapOpts}{filter};
     $kernel->call( pcap => 'run' );
-
-
-    # RRD Tracking Performance
-    $heap->{sniffer_rrd} = dns::monitor::rrd->new( 'sniffer',
-        RootDir => $heap->{_rrd}{dir},
-        DataSources => {
-            count => q{GAUGE 120 0 U},
-        },
-    );
-
-    # Initialize Statistics Engine
-    $kernel->yield('sniffer_stats');
 }
 
 sub sniffer_load_plugins {
     my ($self,$kernel,$heap) = @_[OBJECT,KERNEL,HEAP];
 
-    my %loadedPlugins = ();
-    my $charsToStrip = length('POE::Component::dns::monitor::sniffer::plugin::');
-    foreach my $plugin ( __PACKAGE__->plugins ) {
-        my $name = substr($plugin, $charsToStrip );
-        $kernel->post( $heap->{log} => debug => "found plugin: $name" );
-        # Check for plugin configuration
-        if( !exists $heap->{_plugins}{$name} || ref $heap->{_plugins}{$name} ne 'HASH' ) {
-            $kernel->post( $heap->{log} => notice => "plugin::$name : no configuration, skipping" );
-            next;
-        }
-        # Store the config in a shorter variable
-        my $pluginConf = $heap->{_plugins}{$name};
+    my %plugins=();
+    my %features=();
+    foreach my $plugin ( sort __PACKAGE__->plugins ) {
+        my $name;
+        if(($name) = ($plugin =~ /::plugin::(.*)$/) ) {
+            $kernel->post( $heap->{log} => debug => "found plugin: $name" );
+            # Check for plugin configuration
+            if( !exists $heap->{_plugins}{$name} || ref $heap->{_plugins}{$name} ne 'HASH' ) {
+                $kernel->post( $heap->{log} => notice => "plugin::$name : no configuration, skipping" );
+                next;
+            }
+            # Store the config in a shorter variable
+            my $pluginConf = $heap->{_plugins}{$name};
 
-        # Check to ensure the plugin is enabled
-        if( !exists $pluginConf->{enable} || $pluginConf->{enable} != 1 ) {
-            $kernel->post( $heap->{log} => notice => "plugin::$name : disabled skipping" );
-            next;
-        }
+            # Check to ensure the plugin is enabled
+            if( !exists $pluginConf->{enable} || $pluginConf->{enable} != 1 ) {
+                $kernel->post( $heap->{log} => notice => "plugin::$name : disabled skipping" );
+                next;
+            }
 
-        if( !$plugin->can('spawn') || !$plugin->can('process') ) {
-            $kernel->post( $heap->{log} => notice => "plugin::$name : API Failure, skipping" );
-            next;
-        }
-        $kernel->post( $heap->{log} => debug => "plugin::$name : attempting to bootstrap" );
+            if( !$plugin->can('spawn') || !$plugin->can('process') ) {
+                $kernel->post( $heap->{log} => notice => "plugin::$name : API Failure, skipping" );
+                next;
+            }
+            $kernel->post( $heap->{log} => debug => "plugin::$name : attempting to bootstrap" );
 
-        try {
-            $loadedPlugins{$name} = $plugin->spawn(
-                Alias => $name,
-                Config => $pluginConf,
-                DBH => $heap->{dbh},
-                LogSID => $heap->{log},
-            );
-        } catch {
-            $kernel->post( $heap->{log} => warning => "plugin::$name : unable to spawn: $_" );
-        };
+            try {
+                $plugins{$name} = $plugin->spawn(
+                    Alias => $name,
+                    Config => $pluginConf,
+                    DBH => $heap->{dbh},
+                    LogSID => $heap->{log},
+                );
+            } catch {
+                $kernel->post( $heap->{log} => warning => "plugin::$name : unable to spawn: $_" );
+            };
+        }
+        elsif(($name) = ($plugin =~ /::feature::(.*)$/) ) {
+            # Load a feature
+            $kernel->post( $heap->{log} => debug => "found feature: $name" );
+            # Check for plugin configuration
+            if( !exists $heap->{_features}{$name} || ref $heap->{_features}{$name} ne 'HASH' ) {
+                $kernel->post( $heap->{log} => notice => "feature::$name : no configuration, skipping" );
+                next;
+            }
+            # Store the config in a shorter variable
+            my $featureConf = $heap->{_features}{$name};
+
+            # Check to ensure the plugin is enabled
+            if( !exists $featureConf->{enable} || $featureConf->{enable} != 1 ) {
+                $kernel->post( $heap->{log} => notice => "feature::$name : disabled skipping" );
+                next;
+            }
+
+            if( !$plugin->can('spawn') || !$plugin->can('provides') ) {
+                $kernel->post( $heap->{log} => notice => "feature::$name : API Failure, skipping" );
+                next;
+            }
+            $kernel->post( $heap->{log} => debug => "feature::$name : attempting to bootstrap" );
+
+            my ($feature, $error);
+            try {
+                $feature = $plugin->provides;
+                die "$feature already provided by $features{$feature}->{provided_by}"
+                    if exists $features{$feature};
+                my $sid = $plugin->spawn(
+                    Config => $featureConf,
+                    LogSID => $heap->{log},
+                );
+                $features{$feature} = { sid => $sid, provided_by => $plugin };
+            } catch {
+                $error++;
+                $kernel->post( $heap->{log} => warning => "feature::$name : unable to spawn: $_" );
+            };
+            if( $error ) {
+                delete $features{$feature} if defined $features{$feature};
+                undef $feature;
+            }
+            else {
+                $kernel->post( $heap->{log} => debug => "feature::$name providing $feature loaded" );
+            }
+        }
     }
-    $heap->{_loaded_plugins} = \%loadedPlugins;
-    $kernel->post( $heap->{log} => notice => "plugins loaded: " . join(', ', sort keys %loadedPlugins) );
+    $heap->{_loaded_plugins} = \%plugins;
+    $heap->{_features} = \%features;
+    my $totalPlugins = scalar keys %plugins;
+    if( $totalPlugins < 1 ) {
+        $kernel->call( $heap->{log} => error => "Did not load any plugins, so exiting!" );
+        $kernel->yield('_stop');
+        exit 1;
+    }
+    $kernel->post( $heap->{log} => notice => "plugins loaded: " . join(', ', sort keys %plugins) );
+}
+
+#------------------------------------------------------------------------#
+# sniffer_feature - wrapper around loaded features
+sub sniffer_feature {
+    my ($kernel,$heap,$feature,@args) = @_[KERNEL,HEAP,ARG0..$#_];
+
+    # Feature lookup via alias
+    my $sid = $kernel->alias_resolve( $feature );
+
+    if( defined $sid ) {
+        $kernel->post( $sid, @args );
+    }
+    else {
+        $kernel->post( $heap->{log} => debug => "feature $feature not available" );
+    }
+}
+
+#------------------------------------------------------------------------#
+# sniffer_check_feature - check for a feature
+sub sniffer_check_feature {
+    my ($kernel,$heap,$feature) = @_[KERNEL,HEAP,ARG0];
+
+    # Feature lookup via alias
+    my $sid = $kernel->alias_resolve( $feature );
+
+    if( defined $sid ) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 #------------------------------------------------------------------------#
@@ -233,11 +305,11 @@ sub sniffer_load_plugins {
 sub sniffer_handle_packets {
     my ($kernel,$heap,$packets) = @_[KERNEL,HEAP,ARG0];
 
-    increment_stat( $heap, 'dispatch' );
+    $kernel->yield(feature => stats => incr => 'sniffer.dispatch');
     foreach my $inst ( @{ $packets } )  {
         my ($hdr, $pkt) = @{ $inst };
         next unless defined $hdr;
-        increment_stat( $heap, 'packet' );
+        $kernel->yield(feature => stats => incr => 'sniffer.packet.total');
 
         #
         # Begin Decoding
@@ -256,7 +328,7 @@ sub sniffer_handle_packets {
                 dest_port => $udp->{dest_port},
                 'time' => join('.', $hdr->{tv_sec}, sprintf("%0.6d", $hdr->{tv_usec}) ),
             );
-            increment_stat( $heap, 'udp' );
+            $kernel->yield(feature => stats => incr => 'sniffer.packet.udp');
             $kernel->yield( dns_parse => $udp, \%ip );
         }
         # Handle TCP Packets
@@ -269,11 +341,11 @@ sub sniffer_handle_packets {
                 dest_port => $tcp->{dest_port},
                 'time' => join('.', $hdr->{tv_sec}, sprintf("%0.6d", $hdr->{tv_usec}) ),
             );
-            increment_stat( $heap, 'tcp' );
+            $kernel->yield(feature => stats => incr => 'sniffer.packet.tcp');
             $kernel->yield( dns_parse => $tcp, \%ip );
         }
         else {
-            increment_stat( $heap, 'invalid' );
+            $kernel->yield(feature => stats => incr => 'sniffer.packet.invalid');
         }
     }
 }
@@ -294,18 +366,18 @@ sub sniffer_dns_parse {
     # Parse DNS Packet
     my $dnsp = Net::DNS::Packet->new( \$layer4->{data} );
     return unless defined $dnsp;
-    increment_stat( $heap, 'dns' );
+    $kernel->yield(feature => stats => incr => 'sniffer.dns.total');
 
     #
     # Server Accounting.
     my $qa = $dnsp->header->qr ? 'answer' : 'question';
-    increment_stat( $heap, $qa );
+    $kernel->yield(feature => stats => incr => "sniffer.dns.$qa");
 
     my %info = ( 'time' => $ip->{time} );
     if( $qa eq 'answer' ) {
         $info{server} = $ip->{src_ip};
         $info{server_port} = $ip->{src_port};
-        $info{client} = $ip->{dest_ip}; 
+        $info{client} = $ip->{dest_ip};
         $info{client_port} = $ip->{dest_port};
     }
     else {
@@ -341,53 +413,8 @@ sub sniffer_dns_parse {
 
     foreach my $plugin_name ( keys %{ $heap->{_loaded_plugins} } ) {
         $kernel->post( $plugin_name => process => $dnsp, { %info, %ID } );
-        increment_stat( $heap, "plugin::$plugin_name" );
+        $kernel->yield(feature => stats => incr => "sniffer.plugin.$plugin_name");
     }
-}
-
-sub sniffer_stats {
-    my ($kernel,$heap) = @_[KERNEL,HEAP];
-
-    # Delete the stats from the heap;
-    my $stats = delete $heap->{stats};
-
-    my @pairs = ();
-    foreach my $k (qw( dispatch packet invalid udp tcp port53 dns question answer )) {
-        if( exists $stats->{$k} ) {
-            push @pairs, "$k=$stats->{$k}";
-        }
-    }
-    foreach my $plugin ( sort grep /^plugin\:\:/, keys %{ $stats } ) {
-        push @pairs, "$plugin=$stats->{$plugin}";
-    }
-    $kernel->post( log => 'debug' => 'STATS: ' . join(', ', @pairs) );
-
-    # RRD Track these
-    my @tracked = (qw(dispatch packet udp tcp question answer),
-        map { join('::', 'plugin', $_ ) } keys %{ $heap->{_loaded_plugins} }
-    );
-    foreach my $stat ( @tracked ) {
-        my @path = split /\:\:/, $stat;
-        my $rrd = $heap->{sniffer_rrd}->find_or_create( \@path );
-        $rrd->update( { count => exists $stats->{$stat} ? $stats->{$stat} : 0 } );
-    }
-
-    # Redo Stats Event
-    $kernel->delay_add( 'sniffer_stats', 60 );
-}
-
-sub increment_stat {
-    my ($heap,$key) = @_;
-
-    # make sure the stat exists
-    if( !exists $heap->{stats}  ) {
-        $heap->{stats} = {};
-    }
-    if( !exists $heap->{stats}{$key} ) {
-        $heap->{stats}{$key} = 0;
-    }
-    # increment stat
-    $heap->{stats}{$key}++;
 }
 
 # RETURN TRUE;
