@@ -3,11 +3,10 @@ ABOUT
 	dns-monitor is a project aimed at providing statistics on dns usage
 
 REQUIREMENTS
-	
+
 	Perl (5.10.1 or later)
 	libpcap (1.1.1 recommended)
 	PostgreSQL (8.3 or later)
-	rrdtool (1.2 or later)
 
 	PostgreSQL Database
 	------------------
@@ -47,7 +46,7 @@ INSTALL
 
 		# Or deploy using mod_fcgid and Apache with:
 		ln -s ./conf/apache.conf /etc/httpd/conf.d/dnsmonitor.conf
-	
+
 		# Then navigate to:
 		http://localhost/dns-monitor/
 
