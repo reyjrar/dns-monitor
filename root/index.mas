@@ -4,10 +4,10 @@
 
 <h3>recently added features</h3>
 <ul>
+  <li>Added reference tracking to server, client, and conversation</li>
+  <li>removed RRD bindings as it is a problematic module</li>
   <li>added 'fake reverse' utility which gets reverse data from forwards</li>
-  <li>moved devel::sniffer to perf::sniffer</li>
   <li>devel::sniffer statistics tracking</li>
-  <li>RRDTool integration</li>
 </ul>
 
 
