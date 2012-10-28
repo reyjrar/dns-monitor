@@ -2,7 +2,7 @@
 install:
   base:
     - server
-    - client 
+    - client
     - conversation
     - find_or_create_conversation
 
@@ -160,9 +160,16 @@ upgrade:
       - find_or_create_conversation
 
   20111209:
-     plugins:
+    plugins:
       list::meta:
         level: 0
         entities:
           - list_meta_question
           - list_meta_answer
+
+  20121028:
+    base:
+      - client
+      - server
+      - conversation
+      - find_or_create_conversation

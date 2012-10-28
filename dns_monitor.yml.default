@@ -19,8 +19,6 @@ network:
   nameservers: &GLOBALnameservers
     - 8.8.8.8
     - 8.8.4.4
-  clients: &GLOBALclients
-    - 192.168.1.0/24
 
 db:
   dsn: dbi:Pg:host=localhost;database=dnsmonitor
