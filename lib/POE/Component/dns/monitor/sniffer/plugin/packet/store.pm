@@ -44,7 +44,7 @@ sub packet_store_start {
 
     # Caching
     my %_qcache = ();
-    $heap->{qcache} = CHI->new( driver => 'Memory', datastore => \%_qcache, expires_in => 90 );
+    $heap->{qcache} = CHI->new( driver => 'Memory', datastore => \%_qcache, expires_in => 5 );
     $heap->{__qcache} = \%_qcache;
 
     # Statement Handle Caching
