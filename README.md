@@ -4,9 +4,13 @@ dns-monitor is a project aimed at providing statistics on dns usage
 
 ## UPDATE
 
-The WebUI has been removed from dns-monitor.  A new project which will be released
-shortly will provide an updated UI.  The database of the new project is compatible
-with the dns-monitor database, so transitioning will be simple.
+The WebUI has been removed from dns-monitor. I've started a new project with a
+new UI here:
+
+https://github.com/reyjrar/DreamCatcher
+
+The database of the new project is compatible with the dns-monitor database, so
+transitioning will be simple.
 
 # REQUIREMENTS
 
