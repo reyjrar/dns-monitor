@@ -31,7 +31,7 @@ sub query_response_start {
 	my($kernel,$heap,$args) = @_[KERNEL,HEAP,ARG0];
 
 	$kernel->alias_set( $args->{Alias} );
-	
+
 	# Store stuff in the heap
 	$heap->{log} = $args->{LogSID};
 	$heap->{dbh} = $args->{DBH};
@@ -44,7 +44,7 @@ sub query_response_start {
 
 sub reset_id {
 	my ($kernel,$heap) = @_[KERNEL,HEAP];
-	
+
 	$heap->{last_id} = 0;
 	$kernel->delay_add( reset_id => 3600*12 );
 }
@@ -94,8 +94,8 @@ sub analyze {
 		my $qt = DateTime::Format::Pg->parse_datetime( $q->{query_ts} );
 		# Find the response
 		$STH{find_response}->execute( $q->{conversation_id}, $q->{query_serial},
-			$qt->clone->subtract( seconds => 1)->datetime, 
-			$qt->clone()->add( seconds => 10 )->datetime
+			$qt->clone->datetime,
+			$qt->clone()->add( seconds => 5 )->datetime
 		);
 		# If we found 1, do something!
 		if( $STH{find_response}->rows == 1 ) {
