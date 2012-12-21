@@ -132,16 +132,21 @@ sub process {
 
                 next unless defined $data{value} && length $data{value};
 
-                $heap->{sth}{answer}->execute(
-                    $response_id,
-                    $set->{name},
-                    $pa->ttl,
-                    $pa->class,
-                    $pa->type,
-                    $pa->name,
-                    $data{value},
-                    $data{opts},
-                );
+                try {
+                    my $rc = $heap->{sth}{answer}->execute(
+                        $response_id,
+                        $set->{name},
+                        $pa->ttl,
+                        $pa->class,
+                        $pa->type,
+                        $pa->name,
+                        $data{value},
+                        $data{opts},
+                    );
+                    die "error" unless $rc;
+                } catch {
+                    $kernel->post( $heap->{log} => error => 'Failed to store details for [' . join(' ', $pa->class, $pa->type, $pa->name, $pa->ttl) . "] as $data{value}");
+                };
             }
         }
     }

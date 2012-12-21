@@ -80,7 +80,12 @@ my $dbConn = undef;
 if( exists $CFG->{db} && ref $CFG->{db} eq 'HASH' ) {
     try {
         $dbConn = DBIx::Connector->new( $CFG->{db}{dsn}, $CFG->{db}{user}, $CFG->{db}{pass},
-            { RaiseError => 1 }
+            {
+                RaiseError => 0,
+                HandleError => sub {
+                    $poe_kernel->post( 'log' => debug => shift );
+                }
+            }
         );
     };
 }
